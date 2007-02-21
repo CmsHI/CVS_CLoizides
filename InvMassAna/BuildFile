@@ -1,0 +1,16 @@
+<use name=Foundation/PluginManager>
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<use name=PhysicsTools/UtilAlgos>
+<use name=DataFormats/Candidate>
+<use name=root>
+<flags SEAL_PLUGIN_NAME="CLoizidesInvMassAna">
+<export>
+   <lib name=CLoizidesInvMassAna>
+   <use name=Foundation/PluginManager>
+   <use name=FWCore/Framework>
+   <use name=FWCore/ParameterSet>
+   <use name=PhysicsTools/UtilAlgos>
+   <use name=DataFormats/Candidate>
+   <use name=root>
+</export>
