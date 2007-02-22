@@ -1,0 +1,7 @@
+# $Id:$
+
+<use name=PhysicsTools/UtilAlgos>
+<export>
+  <lib name=CLoizidesUtils>
+  <use name=PhysicsTools/UtilAlgos>
+</export>

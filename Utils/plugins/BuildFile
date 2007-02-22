@@ -1,0 +1,8 @@
+# $Id:$
+
+<use name=FWCore/Framework>
+
+<library file=THistFileService.cc>
+  <use name=CLoizides/Utils>
+  <use name=FWCore/ServiceRegistry>
+</library>
