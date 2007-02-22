@@ -1,0 +1,25 @@
+# $Id:$
+
+<use name=boost>
+<use name=sigcpp>
+<use name=rootrflx>
+<use name=DataFormats/Common>
+<use name=FileCatalog>
+<use name=FWCore/ParameterSet>
+<use name=FWCore/Utilities>
+<use name=FWCore/ServiceRegistry>
+<use name=FWCore/MessageLogger>
+<use name=FWCore/Framework>
+<export>
+ <lib name=CLoizidesMyFixes>
+ <use name=boost>
+ <use name=sigcpp>
+ <use name=rootrflx>
+ <use name=DataFormats/Common>
+ <use name=FileCatalog>
+ <use name=FWCore/ParameterSet>
+ <use name=FWCore/Utilities>
+ <use name=FWCore/ServiceRegistry>
+ <use name=FWCore/MessageLogger>
+ <use name=FWCore/Framework>
+</export>
