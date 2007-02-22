@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 //
-// $Id: FileCatalog.cc,v 1.1 2007/02/22 20:08:30 loizides Exp $
+// $Id: FileCatalog.cc,v 1.2 2007/02/22 20:14:54 loizides Exp $
 //
 // Original Author: Luca Lista
 // Current Author: Bill Tanenbaum
@@ -31,9 +31,7 @@ namespace edm {
       url_(pset.getUntrackedParameter<std::string>("catalog", std::string())),
       active_(false) {
     boost::trim(url_);
-
-    LogInfo("FileCatalog") << "Using FileCatalog from CLoizidesMyFixes.so!\n";
-  }
+ }
 
   FileCatalog::~FileCatalog() {
     if (active_) catalog_.commit();
@@ -50,6 +48,8 @@ namespace edm {
     logicalFileNames_(pset.getUntrackedParameter<std::vector<std::string> >("fileNames")),
     fileNames_(logicalFileNames_),
     fileCatalogItems_() {
+
+    LogInfo("InputFileCatalog") << "<<<<<<<--- Using InputFileCatalog from CLoizidesMyFixes.so! --->>>>>>>\n";
 
     if (logicalFileNames_.empty()) {
         throw edm::Exception(edm::errors::Configuration, "InputFileCatalog::InputFileCatalog()\n")
@@ -141,10 +141,30 @@ namespace edm {
       FileCatalog(pset),
       fileName_(pset.getUntrackedParameter<std::string>("fileName")),
       logicalFileName_(pset.getUntrackedParameter<std::string>("logicalFileName", std::string())) {
+
+    LogInfo("OutputFileCatalog") << "<<<<<<<--- Using OutputFileCatalog from CLoizidesMyFixes.so! --->>>>>>>\n";
+
     boost::trim(fileName_);
     if (fileName_.empty()) {
         throw edm::Exception(edm::errors::Configuration, "OutputFileCatalog::OutputFileCatalog()\n")
 	  << "Empty 'fileName' parameter specified for output module.\n";
+    } else {
+        std::string pstr=fileName_.substr(0,fileName_.find(':')+1);
+        std::string fstr=fileName_.substr(fileName_.find(':')+1);
+        wordexp_t mywordexp;
+        int ret=wordexp(fstr.c_str(), &mywordexp, WRDE_NOCMD | WRDE_UNDEF);
+        if(ret!=0) {
+           throw edm::Exception(edm::errors::Configuration, "OutputFileCatalog::OutputFileCatalog()\n")
+              << "Could not expand word '" << fileName_ << "' given in 'fileName' parameter for output source.\n";
+        }
+        if(mywordexp.we_wordc>1) {
+           throw edm::Exception(edm::errors::Configuration, "OutputFileCatalog::OutputFileCatalog()\n")
+              << "Expansion of 'fileName' parameter yields more than one expanded word.\n";
+        } else {
+          fileName_=pstr;
+          fileName_.append(mywordexp.we_wordv[0]);
+        } 
+        wordfree(&mywordexp);
     }
     boost::trim(logicalFileName_);
     if (url().empty()) {
