@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 //
-// $Id: FileCatalog.cc,v 1.11 2007/01/19 05:25:11 wmtan Exp $
+// $Id: FileCatalog.cc,v 1.1 2007/02/22 20:08:30 loizides Exp $
 //
 // Original Author: Luca Lista
 // Current Author: Bill Tanenbaum
@@ -9,7 +9,7 @@
 
 #include "FWCore/Utilities/interface/Exception.h"
 
-#include "FWCore/Framework/interface/FileCatalog.h"
+#include "CLoizides/MyFixes/interface/FileCatalog.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FileCatalog/URIParser.h"
 #include "FileCatalog/IFCAction.h"
