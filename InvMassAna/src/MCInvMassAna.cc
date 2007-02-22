@@ -5,15 +5,17 @@
 // 
 /**\class MCInvMassAna MCInvMassAna.cc MC/MCInvMassAna/src/MCInvMassAna.cc
 
- Description: <one line class summary>
+ Description: This class takes GenParticleCandiates for a given pair
+              of particle ids and calculates their invariant mass distribution.
 
- Implementation:
-     <Notes on implementation>
+ Implementation: Nothing special about it. Class uses my new THistFileService
+                 for the histogramming.
+     
 */
 //
 // Original Author:  Constantin Loizides
 //         Created:  Tue Feb 13 12:50:51 EST 2007
-// $Id$
+// $Id: MCInvMassAna.cc,v 1.1 2007/02/21 18:27:27 loizides Exp $
 //
 //
 
@@ -33,7 +35,7 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
 
-#include "PhysicsTools/UtilAlgos/interface/TFileService.h"
+#include "CLoizides/Utils/interface/THistFileService.h"
 
 #include "TH1D.h"
 #include "TString.h"
@@ -71,21 +73,32 @@ class MCInvMassAna : public edm::EDAnalyzer {
 // constructors and destructor
 //
 MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
-   src_( iConfig.getParameter<edm::InputTag>( "src" ) ),
-   pdgId1_( iConfig.getParameter<int>( "pdgId1") ),
-   pdgId2_( iConfig.getParameter<int>( "pdgId2") )
+   src_( iConfig.getParameter<edm::InputTag>("src")),
+   pdgId1_( iConfig.getParameter<int>("pdgId1")),
+   pdgId2_( iConfig.getParameter<int>("pdgId2")),
+   m_InvMass(0)
 {
    // now do what ever initialization is needed
 
-}
+   edm::Service<THistFileService> fs;
+   if(!fs) {
+      throw edm::Exception(edm::errors::NullPointerError, "MCInvMassAna::MCInvMassAna()\n")
+	  << "Could not get pointer to THistFileService.\n";
+   }
 
+   m_InvMass  = fs->makeHist<TH1D>("hInvMass", iConfig, 
+                                   ";inv.mass [GeV];#", 100, 5, 15);
+
+   if(!m_InvMass) {
+      throw edm::Exception(edm::errors::NullPointerError, "MCInvMassAna::MCInvMassAna()\n")
+         << "Could not get pointer to histogram.\n";
+   }
+}
 
 MCInvMassAna::~MCInvMassAna()
 {
- 
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
-
 }
 
 
@@ -98,7 +111,6 @@ void
 MCInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-   //using namespace HepMC;
    using namespace reco;
 
    Handle<CandidateCollection> particles;
@@ -131,9 +143,6 @@ MCInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 void 
 MCInvMassAna::beginJob(const edm::EventSetup&) {
 
-   edm::Service<TFileService> fs;
-   m_InvMass  = fs->make<TH1D>(Form("InvariantMassPdg%dPdg%d",pdgId1_,pdgId2_), 
-                               ";inv.mass [GeV];#",100,0,100);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
