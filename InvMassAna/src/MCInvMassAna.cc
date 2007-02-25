@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    MCInvMassAna
+// Package:    InvMassAna
 // Class:      MCInvMassAna
 // 
-/**\class MCInvMassAna MCInvMassAna.cc MC/MCInvMassAna/src/MCInvMassAna.cc
+/**\class MCInvMassAna MCInvMassAna.cc CLoizides/InvMassAna/src/MCInvMassAna.cc
 
  Description: This class takes GenParticleCandiates for a given pair
               of particle ids and calculates their invariant mass distribution.
@@ -15,13 +15,16 @@
 //
 // Original Author:  Constantin Loizides
 //         Created:  Tue Feb 13 12:50:51 EST 2007
-// $Id: MCInvMassAna.cc,v 1.1 2007/02/21 18:27:27 loizides Exp $
+// $Id: MCInvMassAna.cc,v 1.2 2007/02/22 19:21:00 loizides Exp $
 //
 //
 
 
 // system include files
 #include <memory>
+
+// my include filee
+#include "CLoizides/InvMassAna/interface/MCInvMassAna.h"
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -38,28 +41,9 @@
 #include "CLoizides/Utils/interface/THistFileService.h"
 
 #include "TH1D.h"
+#include "TH2D.h"
+#include "TMath.h"
 #include "TString.h"
-
-//
-// class declaration
-//
-
-class MCInvMassAna : public edm::EDAnalyzer {
-   public:
-      explicit MCInvMassAna(const edm::ParameterSet&);
-      ~MCInvMassAna();
-
-   private:
-      virtual void beginJob(const edm::EventSetup&) ;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
-
-      // ----------member data ---------------------------
-      edm::InputTag src_;
-      int pdgId1_;
-      int pdgId2_;
-      TH1D *m_InvMass;
-};
 
 //
 // constants, enums and typedefs
@@ -73,10 +57,20 @@ class MCInvMassAna : public edm::EDAnalyzer {
 // constructors and destructor
 //
 MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
-   src_( iConfig.getParameter<edm::InputTag>("src")),
-   pdgId1_( iConfig.getParameter<int>("pdgId1")),
-   pdgId2_( iConfig.getParameter<int>("pdgId2")),
-   m_InvMass(0)
+   src_(iConfig.getParameter<edm::InputTag>("src")),
+   pdgId1_(iConfig.getParameter<int>("pdgId1")),
+   pdgId2_(iConfig.getParameter<int>("pdgId2")),
+   ptmin_(iConfig.getUntrackedParameter<double>("ptmin",0.)),
+   etamax_(iConfig.getUntrackedParameter<double>("etamax",5.)),
+   m_InvMass(0),
+   m_PtInvMass(0),
+   m_EtaInvMass(0),
+   m_Pt1(0),
+   m_Pt2(0),
+   m_Eta1(0),
+   m_Eta2(0),
+   m_Entries1(0),
+   m_Entries2(0)
 {
    // now do what ever initialization is needed
 
@@ -86,13 +80,17 @@ MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
 	  << "Could not get pointer to THistFileService.\n";
    }
 
-   m_InvMass  = fs->makeHist<TH1D>("hInvMass", iConfig, 
-                                   ";inv.mass [GeV];#", 100, 5, 15);
-
-   if(!m_InvMass) {
-      throw edm::Exception(edm::errors::NullPointerError, "MCInvMassAna::MCInvMassAna()\n")
-         << "Could not get pointer to histogram.\n";
-   }
+   m_InvMass    = fs->makeHist<TH1D>("hInvMass", iConfig, ";inv.mass [GeV];#", 100, 5, 15);
+   m_PtInvMass  = fs->makeHist<TH2D>("hPtvsInvMass", iConfig, ";inv.mass [GeV];p_{T} [GeV]",
+                                    100, 5, 15, 150, 0, 15);
+   m_EtaInvMass = fs->makeHist<TH2D>("hEtavsInvMass", iConfig, ";inv.mass [GeV];#eta", 
+                                     100, 5, 15, 100, -5, 5);
+   m_Pt1        = fs->makeHist<TH1D>("hPt1", iConfig, ";p_{T} [GeV];#", 150, 0, 15);
+   m_Pt2        = fs->makeHist<TH1D>("hPt2", iConfig, ";p_{T} [GeV];#", 150, 0, 15);
+   m_Eta1       = fs->makeHist<TH1D>("hEta1", iConfig, ";#eta;#", 100, -5, 5);
+   m_Eta2       = fs->makeHist<TH1D>("hEta2", iConfig, ";#eta;#", 100, -5, 5);
+   m_Entries1   = fs->makeHist<TH1D>("hEntries1", iConfig, ";#per event;#", 10, -0.5, 9.5);
+   m_Entries2   = fs->makeHist<TH1D>("hEntries2", iConfig, ";#per event;#", 10, -0.5, 9.5);
 }
 
 MCInvMassAna::~MCInvMassAna()
@@ -114,27 +112,51 @@ MCInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    using namespace reco;
 
    Handle<CandidateCollection> particles;
-   iEvent.getByLabel( src_, particles );
-   for( CandidateCollection::const_iterator p1 = particles->begin();
-                                            p1 != particles->end(); ++p1 ) {
+   iEvent.getByLabel(src_,particles);
+
+   int c1=0,c2=0;
+   for(CandidateCollection::const_iterator p = particles->begin();
+       p != particles->end(); ++p) {
+
+      if(p->pdgId()==pdgId1_) {
+         m_Pt1->Fill(p->pt());
+         m_Eta1->Fill(p->eta());
+         ++c1;
+      }
+      if(p->pdgId()==pdgId2_) {
+         m_Pt2->Fill(p->pt());
+         m_Eta2->Fill(p->eta());
+         ++c2;
+      }
+   }
+   m_Entries1->Fill(c1);
+   m_Entries2->Fill(c1);
+
+   for(CandidateCollection::const_iterator p1 = particles->begin();
+       p1 != particles->end(); ++p1) {
 
       if(p1->pdgId()!=pdgId1_) continue;
+      if(TMath::Abs(p1->eta()) > etamax_)  continue;
+      if(p1->pt() < ptmin_)    continue;
 
       //make sure we pair with the right set of particles
       CandidateCollection::const_iterator p2begin=particles->begin();
       if(pdgId1_==pdgId2_) p2begin=p1+1;
 
-      for( CandidateCollection::const_iterator p2 = p2begin;
-                                               p2 != particles->end(); ++p2 ) {
+      for(CandidateCollection::const_iterator p2 = p2begin;
+          p2 != particles->end(); ++p2) {
 
          if(p2==p1) continue;
          if(p2->pdgId()!=pdgId2_) continue;
+         if(TMath::Abs(p2->eta()) > etamax_)  continue;
+         if(p2->pt() < ptmin_)    continue;
 
-         //std::cout << p1->pdgId() << " " << p1->px() << " " << p1->py() << " " << p1->pz() << std::endl;
-         //std::cout << "Found: " << p2->pdgId() << " " << p2->px() << " " << p2->py() << " " << p2->pz() << std::endl;
          Double_t invmass = (p1->p4() + p2->p4()).mass();
-         //std::cout << "Found: " << p1->pdgId() << " " << p2->pdgId() << " " << invmass << std::endl;
+         Double_t invpt = (p1->p4() + p2->p4()).pt();
+         Double_t inveta = (p1->p4() + p2->p4()).eta();
          m_InvMass->Fill(invmass);
+         m_PtInvMass->Fill(invpt,invmass);
+         m_EtaInvMass->Fill(inveta,invmass);
       }
    }  
 }
@@ -149,6 +171,3 @@ MCInvMassAna::beginJob(const edm::EventSetup&) {
 void 
 MCInvMassAna::endJob() {
 }
-
-//define this as a plug-in
-DEFINE_FWK_MODULE(MCInvMassAna);
