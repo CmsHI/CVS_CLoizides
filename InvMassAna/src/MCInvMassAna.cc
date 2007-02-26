@@ -15,7 +15,7 @@
 //
 // Original Author:  Constantin Loizides
 //         Created:  Tue Feb 13 12:50:51 EST 2007
-// $Id: MCInvMassAna.cc,v 1.2 2007/02/22 19:21:00 loizides Exp $
+// $Id: MCInvMassAna.cc,v 1.3 2007/02/25 23:38:52 loizides Exp $
 //
 //
 
@@ -81,10 +81,10 @@ MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
    }
 
    m_InvMass    = fs->makeHist<TH1D>("hInvMass", iConfig, ";inv.mass [GeV];#", 100, 5, 15);
-   m_PtInvMass  = fs->makeHist<TH2D>("hPtvsInvMass", iConfig, ";inv.mass [GeV];p_{T} [GeV]",
-                                    100, 5, 15, 150, 0, 15);
-   m_EtaInvMass = fs->makeHist<TH2D>("hEtavsInvMass", iConfig, ";inv.mass [GeV];#eta", 
-                                     100, 5, 15, 100, -5, 5);
+   m_PtInvMass  = fs->makeHist<TH2D>("hPtvsInvMass", iConfig, ";p_{T} [GeV];inv.mass [GeV]",
+                                     150, 0, 15, 100, 5, 15);
+   m_EtaInvMass = fs->makeHist<TH2D>("hEtavsInvMass", iConfig, ";#eta;inv.mass [GeV]", 
+                                     100, -5, 5, 100, 5, 15 );
    m_Pt1        = fs->makeHist<TH1D>("hPt1", iConfig, ";p_{T} [GeV];#", 150, 0, 15);
    m_Pt2        = fs->makeHist<TH1D>("hPt2", iConfig, ";p_{T} [GeV];#", 150, 0, 15);
    m_Eta1       = fs->makeHist<TH1D>("hEta1", iConfig, ";#eta;#", 100, -5, 5);
