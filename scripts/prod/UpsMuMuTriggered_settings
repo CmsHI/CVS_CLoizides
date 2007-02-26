@@ -1,0 +1,14 @@
+# *-*-Mode: Shell-script -*- 
+# $Id:$
+
+if test -z "$CMSSW_VERSION"; then
+    KEEPPATH=`pwd`
+    source $HOME/setup_cms.sh 1_2_3 prod
+    cd $KEEPPATH
+fi
+
+export CFGTEMPPATH=$CMSSW_BASE/src/CLoizides/scripts/prod/genUpsMuMuTriggered_template.cfg
+export GENCONFIG=`dirname $CFGTEMPPATH`/gen_config.sh 
+
+export EVENTS=20000
+export MAXEVENTS=500
