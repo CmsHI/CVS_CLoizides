@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 //
-// $Id: FileCatalog.cc,v 1.2 2007/02/22 20:14:54 loizides Exp $
+// $Id: FileCatalog.cc,v 1.3 2007/02/22 21:53:08 loizides Exp $
 //
 // Original Author: Luca Lista
 // Current Author: Bill Tanenbaum
@@ -81,6 +81,7 @@ namespace edm {
         for(uint i=0;i<mywordexp.we_wordc;i++) {
           std::string *pname=new std::string(pstr);
           pname->append(mywordexp.we_wordv[i]);
+          LogInfo("InputFileCatalog") << "Translating " << *it << " into " << *pname <<"\n";
           fileCatalogItems_.push_back(FileCatalogItem(*pname, *lt));
         }
         wordfree(&mywordexp);
