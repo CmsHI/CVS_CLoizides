@@ -1,5 +1,9 @@
 # *-*-Mode: Shell-script -*- 
-# $Id:$
+# $Id: UpsFlat_settings,v 1.1 2007/02/26 21:11:54 loizides Exp $
+
+if test -z "$HOME"; then
+    export HOME=/net/hisrv0001/home/loizides
+fi
 
 if test -z "$CMSSW_VERSION"; then
     KEEPPATH=`pwd`
