@@ -1,5 +1,5 @@
 # *-*-Mode: Shell-script -*- 
-# $Id: UpsMuMuTriggered_settings,v 1.1 2007/02/26 21:11:54 loizides Exp $
+# $Id: UpsMuMuTriggered_settings,v 1.2 2007/02/27 12:28:02 loizides Exp $
 
 if test -z "$HOME"; then
     export HOME=/net/hisrv0001/home/loizides
@@ -14,5 +14,10 @@ fi
 export CFGTEMPPATH=$CMSSW_BASE/src/CLoizides/scripts/prod/genUpsMuMuTriggered_template.cfg
 export GENCONFIG=`dirname $CFGTEMPPATH`/gen_config.sh 
 
-export EVENTS=20000
-export MAXEVENTS=500
+if test -z "$EVENTS"; then
+    export EVENTS=20000
+fi
+
+if test -z "$MAXEVENTS"; then
+    export MAXEVENTS=500
+fi
