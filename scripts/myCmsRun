@@ -1,0 +1,31 @@
+#!/bin/bash
+# $Id:$
+
+if test -n "$CMSSW_VERSION"; then
+    echo "$0: Running cmsRun for CMSSW version $CMSSW_VERSION"
+else 
+    echo "$0: CMSSW environment not properly set"
+    exit 1
+fi
+
+DATESTR=`date +%s`
+if test -z "$MYHISTOUTPUT"; then
+    export MYHISTOUTPUT="myhistos-$DATESTR.root"
+fi
+
+if test -z "$MYOUTPUTFILE"; then
+    export MYOUTPUTFILE="file:myoutput-$DATESTR.root"
+fi
+
+
+PRELOADLIB=$CMSSW_BASE/lib/$SCRAM_ARCH/libCLoizidesMyFixes.so
+if test -e "$PRELOADLIB"; then
+    export LD_PRELOAD=$PRELOADLIB
+else
+    PRELOADLIB=""
+fi
+
+echo "$0: Using MYOUTPUTFILE: $MYOUTPUTFILE"
+echo "$0: Using MYHISTOUTPUT: $MYHISTOUTPUT"
+
+cmsRun $@
