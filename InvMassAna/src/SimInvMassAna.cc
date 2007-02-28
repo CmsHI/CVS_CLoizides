@@ -1,11 +1,11 @@
 // -*- C++ -*-
 //
 // Package:    InvMassAna
-// Class:      MCInvMassAna
+// Class:      SimInvMassAna
 // 
-/**\class MCInvMassAna MCInvMassAna.cc CLoizides/InvMassAna/src/MCInvMassAna.cc
+/**\class SimInvMassAna SimInvMassAna.cc CLoizides/InvMassAna/src/SimInvMassAna.cc
 
- Description: This class takes GenParticleCandiates for a given pair
+ Description: This class takes SimTracks for a given pair
               of particle ids and calculates their invariant mass distribution.
 
  Implementation: Nothing special about it. Class uses my new THistFileService
@@ -15,7 +15,7 @@
 //
 // Original Author:  Constantin Loizides
 //         Created:  Tue Feb 13 12:50:51 EST 2007
-// $Id: MCInvMassAna.cc,v 1.4 2007/02/26 17:05:56 loizides Exp $
+// $Id: SimInvMassAna.cc,v 1.4 2007/02/26 17:05:56 loizides Exp $
 //
 //
 
@@ -24,7 +24,7 @@
 #include <memory>
 
 // my include filee
-#include "CLoizides/InvMassAna/interface/MCInvMassAna.h"
+#include "CLoizides/InvMassAna/interface/SimInvMassAna.h"
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -35,8 +35,10 @@
 #include "FWCore/ParameterSet/interface/InputTag.h"
 #include "FWCore/ServiceRegistry/interface/Service.h" 
 
-#include "DataFormats/Candidate/interface/CandidateFwd.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
+#include "SimDataFormats/Track/interface/SimTrackContainer.h"
+#include "SimDataFormats/Track/interface/SimTrack.h"
+
+#include "CLHEP/Vector/LorentzVector.h"
 
 #include "CLoizides/Utils/interface/THistFileService.h"
 
@@ -56,7 +58,7 @@
 //
 // constructors and destructor
 //
-MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
+SimInvMassAna::SimInvMassAna(const edm::ParameterSet& iConfig) :
    src_(iConfig.getParameter<edm::InputTag>("src")),
    pdgId1_(iConfig.getParameter<int>("pdgId1")),
    pdgId2_(iConfig.getParameter<int>("pdgId2")),
@@ -76,7 +78,7 @@ MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
 
    edm::Service<THistFileService> fs;
    if(!fs) {
-      throw edm::Exception(edm::errors::NullPointerError, "MCInvMassAna::MCInvMassAna()\n")
+      throw edm::Exception(edm::errors::NullPointerError, "SimInvMassAna::SimInvMassAna()\n")
 	  << "Could not get pointer to THistFileService.\n";
    }
 
@@ -93,7 +95,7 @@ MCInvMassAna::MCInvMassAna(const edm::ParameterSet& iConfig) :
    m_Entries2   = fs->makeHist<TH1D>("hEntries2", iConfig, ";#per event;#", 10, -0.5, 9.5);
 }
 
-MCInvMassAna::~MCInvMassAna()
+SimInvMassAna::~SimInvMassAna()
 {
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
@@ -106,54 +108,56 @@ MCInvMassAna::~MCInvMassAna()
 
 // ------------ method called to for each event  ------------
 void
-MCInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+SimInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-   using namespace reco;
+   using namespace CLHEP;
 
-   Handle<CandidateCollection> particles;
-   iEvent.getByLabel(src_,particles);
+   Handle<SimTrackContainer> particles;
+   iEvent.getByLabel(src_, particles );
 
    int c1=0,c2=0;
-   for(CandidateCollection::const_iterator p = particles->begin();
-       p != particles->end(); ++p) {
+   for(SimTrackContainer::const_iterator p = particles->begin();
+       p != particles->end(); ++p ) {
 
-      if(p->pdgId()==pdgId1_) {
-         m_Pt1->Fill(p->pt());
-         m_Eta1->Fill(p->eta());
+      if(p->type()==pdgId1_) {
+
+         m_Pt1->Fill(p->momentum().perp());
+         m_Eta1->Fill(p->momentum().pseudoRapidity());
          ++c1;
       }
-      if(p->pdgId()==pdgId2_) {
-         m_Pt2->Fill(p->pt());
-         m_Eta2->Fill(p->eta());
+      if(p->type()==pdgId2_) {
+         m_Pt2->Fill(p->momentum().perp());
+         m_Eta2->Fill(p->momentum().pseudoRapidity());
          ++c2;
       }
    }
+
    m_Entries1->Fill(c1);
    m_Entries2->Fill(c2);
 
-   for(CandidateCollection::const_iterator p1 = particles->begin();
-       p1 != particles->end(); ++p1) {
+   for(SimTrackContainer::const_iterator p1 = particles->begin();
+       p1 != particles->end(); ++p1 ) {
 
-      if(p1->pdgId()!=pdgId1_) continue;
-      if(TMath::Abs(p1->eta()) > etamax_)  continue;
-      if(p1->pt() < ptmin_)    continue;
+      if(p1->type()!=pdgId1_) continue;
+      if(TMath::Abs(p1->momentum().pseudoRapidity()) > etamax_)  continue;
+      if(p1->momentum().perp() < ptmin_)    continue;
 
       //make sure we pair with the right set of particles
-      CandidateCollection::const_iterator p2begin=particles->begin();
+      SimTrackContainer::const_iterator p2begin=particles->begin();
       if(pdgId1_==pdgId2_) p2begin=p1+1;
 
-      for(CandidateCollection::const_iterator p2 = p2begin;
-          p2 != particles->end(); ++p2) {
+      for(SimTrackContainer::const_iterator p2 = p2begin;
+          p2 != particles->end(); ++p2 ) {
 
          if(p2==p1) continue;
-         if(p2->pdgId()!=pdgId2_) continue;
-         if(TMath::Abs(p2->eta()) > etamax_)  continue;
-         if(p2->pt() < ptmin_)    continue;
+         if(p2->type()!=pdgId2_) continue;
+         if(TMath::Abs(p2->momentum().pseudoRapidity()) > etamax_)  continue;
+         if(p2->momentum().perp() < ptmin_)    continue;
 
-         Double_t invmass = (p1->p4() + p2->p4()).mass();
-         Double_t invpt = (p1->p4() + p2->p4()).pt();
-         Double_t inveta = (p1->p4() + p2->p4()).eta();
+         Double_t invmass = (p1->momentum() + p2->momentum()).mag();
+         Double_t invpt = (p1->momentum() + p2->momentum()).perp();
+         Double_t inveta = (p1->momentum() + p2->momentum()).pseudoRapidity();
          m_InvMass->Fill(invmass);
          m_PtInvMass->Fill(invpt,invmass);
          m_EtaInvMass->Fill(inveta,invmass);
@@ -163,11 +167,11 @@ MCInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MCInvMassAna::beginJob(const edm::EventSetup&) {
+SimInvMassAna::beginJob(const edm::EventSetup&) {
 
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-MCInvMassAna::endJob() {
+SimInvMassAna::endJob() {
 }
