@@ -1,21 +1,19 @@
 // -*- C++ -*-
 //
 // Package:    InvMassAna
-// Class:      SimInvMassAna
+// Class:      MuonHLTInvMassAna
 // 
-/**\class SimInvMassAna SimInvMassAna.cc CLoizides/InvMassAna/src/SimInvMassAna.cc
+/**\class MuonHLTInvMassAna MuonHLTInvMassAna.cc CLoizides/InvMassAna/src/MuonHLTInvMassAna.cc
 
- Description: This class takes SimTracks for a given pair
-              of particle ids and calculates their invariant mass distribution.
+ Description: 
 
- Implementation: Nothing special about it. Class uses my new THistFileService
-                 for the histogramming.
+ Implementation: 
      
 */
 //
 // Original Author:  Constantin Loizides
-//         Created:  Tue Feb 13 12:50:51 EST 2007
-// $Id: SimInvMassAna.cc,v 1.1 2007/02/28 23:20:00 loizides Exp $
+//         Created:  Tue Feb 22 12:50:51 EST 2007
+// $Id: MuonHLTInvMassAna.cc,v 1.1 2007/02/25 23:38:52 loizides Exp $
 //
 //
 
@@ -24,7 +22,7 @@
 #include <memory>
 
 // my include filee
-#include "CLoizides/InvMassAna/interface/SimInvMassAna.h"
+#include "CLoizides/InvMassAna/interface/MuonHLTInvMassAna.h"
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -35,10 +33,8 @@
 #include "FWCore/ParameterSet/interface/InputTag.h"
 #include "FWCore/ServiceRegistry/interface/Service.h" 
 
-#include "SimDataFormats/Track/interface/SimTrackContainer.h"
-#include "SimDataFormats/Track/interface/SimTrack.h"
-
-#include "CLHEP/Vector/LorentzVector.h"
+#include "DataFormats/HLTReco/interface/HLTFilterObject.h"
+#include "DataFormats/Common/interface/RefToBase.h"
 
 #include "CLoizides/Utils/interface/THistFileService.h"
 
@@ -57,10 +53,8 @@
 //
 // constructors and destructor
 //
-SimInvMassAna::SimInvMassAna(const edm::ParameterSet& iConfig) :
-   src_(iConfig.getParameter<edm::InputTag>("src")),
-   pdgId1_(iConfig.getParameter<int>("pdgId1")),
-   pdgId2_(iConfig.getParameter<int>("pdgId2")),
+MuonHLTInvMassAna::MuonHLTInvMassAna(const edm::ParameterSet& iConfig) :
+   src_( iConfig.getParameter<edm::InputTag>("src")),
    ptmin_(iConfig.getUntrackedParameter<double>("ptmin",0.)),
    etamax_(iConfig.getUntrackedParameter<double>("etamax",5.)),
    m_InvMass(0),
@@ -77,7 +71,7 @@ SimInvMassAna::SimInvMassAna(const edm::ParameterSet& iConfig) :
 
    edm::Service<THistFileService> fs;
    if(!fs) {
-      throw edm::Exception(edm::errors::NullPointerError, "SimInvMassAna::SimInvMassAna()\n")
+      throw edm::Exception(edm::errors::NullPointerError, "MuonHLTInvMassAna::MuonHLTInvMassAna()\n")
 	  << "Could not get pointer to THistFileService.\n";
    }
 
@@ -94,7 +88,7 @@ SimInvMassAna::SimInvMassAna(const edm::ParameterSet& iConfig) :
    m_Entries2   = fs->makeHist<TH1D>("hEntries2", iConfig, ";#per event;#", 10, -0.5, 9.5);
 }
 
-SimInvMassAna::~SimInvMassAna()
+MuonHLTInvMassAna::~MuonHLTInvMassAna()
 {
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
@@ -107,56 +101,49 @@ SimInvMassAna::~SimInvMassAna()
 
 // ------------ method called to for each event  ------------
 void
-SimInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+MuonHLTInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-   using namespace CLHEP;
+   using namespace reco;
 
-   Handle<SimTrackContainer> particles;
-   iEvent.getByLabel(src_, particles );
+   Handle<HLTFilterObjectWithRefs> filterproduct;
+   iEvent.getByLabel(src_, filterproduct);
 
    int c1=0,c2=0;
-   for(SimTrackContainer::const_iterator p = particles->begin();
-       p != particles->end(); ++p ) {
+   for (unsigned int i=0; i<filterproduct->size(); i++) {
+      RefToBase<Candidate> p = filterproduct->getParticleRef(i);
 
-      if(p->type()==pdgId1_) {
-
-         m_Pt1->Fill(p->momentum().perp());
-         m_Eta1->Fill(p->momentum().pseudoRapidity());
+      if(p->charge()<0) {
+         m_Pt1->Fill(p->pt());
+         m_Eta1->Fill(p->eta());
          ++c1;
       }
-      if(p->type()==pdgId2_) {
-         m_Pt2->Fill(p->momentum().perp());
-         m_Eta2->Fill(p->momentum().pseudoRapidity());
+      if(p->charge()>0) {
+         m_Pt2->Fill(p->pt());
+         m_Eta2->Fill(p->eta());
          ++c2;
       }
    }
-
    m_Entries1->Fill(c1);
    m_Entries2->Fill(c2);
 
-   for(SimTrackContainer::const_iterator p1 = particles->begin();
-       p1 != particles->end(); ++p1 ) {
 
-      if(p1->type()!=pdgId1_) continue;
-      if(TMath::Abs(p1->momentum().pseudoRapidity()) > etamax_)  continue;
-      if(p1->momentum().perp() < ptmin_)    continue;
+   for (unsigned int i=0; i<filterproduct->size(); i++) {
+      RefToBase<Candidate> p1 = filterproduct->getParticleRef(i);
 
-      //make sure we pair with the right set of particles
-      SimTrackContainer::const_iterator p2begin=particles->begin();
-      if(pdgId1_==pdgId2_) p2begin=p1+1;
+      if(TMath::Abs(p1->eta()) > etamax_)  continue;
+      if(p1->pt() < ptmin_)    continue;
 
-      for(SimTrackContainer::const_iterator p2 = p2begin;
-          p2 != particles->end(); ++p2 ) {
+      for (unsigned int j=i+1; j<filterproduct->size(); j++) {
+         RefToBase<Candidate> p2 = filterproduct->getParticleRef(j);
 
          if(p2==p1) continue;
-         if(p2->type()!=pdgId2_) continue;
-         if(TMath::Abs(p2->momentum().pseudoRapidity()) > etamax_)  continue;
-         if(p2->momentum().perp() < ptmin_)    continue;
+         if(TMath::Abs(p2->eta()) > etamax_)  continue;
+         if(p2->pt() < ptmin_)    continue;
 
-         Double_t invmass = (p1->momentum() + p2->momentum()).mag();
-         Double_t invpt = (p1->momentum() + p2->momentum()).perp();
-         Double_t inveta = (p1->momentum() + p2->momentum()).pseudoRapidity();
+         Double_t invmass = (p1->p4() + p2->p4()).mass();
+         Double_t invpt = (p1->p4() + p2->p4()).pt();
+         Double_t inveta = (p1->p4() + p2->p4()).eta();
          m_InvMass->Fill(invmass);
          m_PtInvMass->Fill(invpt,invmass);
          m_EtaInvMass->Fill(inveta,invmass);
@@ -166,11 +153,11 @@ SimInvMassAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-SimInvMassAna::beginJob(const edm::EventSetup&) {
+MuonHLTInvMassAna::beginJob(const edm::EventSetup&) {
 
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-SimInvMassAna::endJob() {
+MuonHLTInvMassAna::endJob() {
 }

@@ -1,7 +1,7 @@
-// $Id: MuonInvMassAna.h,v 1.1 2007/02/25 23:38:52 loizides Exp $
+// $Id: MuonHLTInvMassAna.h,v 1.1 2007/02/25 23:38:52 loizides Exp $
 
-#ifndef InvMassAna_MuonInvMassAna_h
-#define InvMassAna_MuonInvMassAna_h
+#ifndef InvMassAna_MuonHLTInvMassAna_h
+#define InvMassAna_MuonHLTInvMassAna_h
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
@@ -9,10 +9,10 @@
 #include "TH1D.h"
 #include "TH2D.h"
 
-class MuonInvMassAna : public edm::EDAnalyzer {
+class MuonHLTInvMassAna : public edm::EDAnalyzer {
    public:
-      explicit MuonInvMassAna(const edm::ParameterSet&);
-      ~MuonInvMassAna();
+      explicit MuonHLTInvMassAna(const edm::ParameterSet&);
+      ~MuonHLTInvMassAna();
 
    private:
       virtual void beginJob(const edm::EventSetup&) ;

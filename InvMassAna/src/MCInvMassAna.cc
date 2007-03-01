@@ -15,7 +15,7 @@
 //
 // Original Author:  Constantin Loizides
 //         Created:  Tue Feb 13 12:50:51 EST 2007
-// $Id: MCInvMassAna.cc,v 1.4 2007/02/26 17:05:56 loizides Exp $
+// $Id: MCInvMassAna.cc,v 1.5 2007/02/28 23:20:00 loizides Exp $
 //
 //
 
@@ -43,7 +43,6 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TMath.h"
-#include "TString.h"
 
 //
 // constants, enums and typedefs
