@@ -1,0 +1,19 @@
+# *-*-Mode: Shell-script -*- 
+# $Id: UpsFlat.settings,v 1.1 2007/02/28 23:46:26 loizides Exp $
+
+if test -z "$HOME"; then
+    export HOME=/net/hisrv0001/home/loizides
+fi
+
+if test -z "$CMSSW_VERSION"; then
+    KEEPPATH=`pwd`
+    source $HOME/setup_cms.sh 1_2_3 prod
+    cd $KEEPPATH
+fi
+
+export CFGTEMPPATH=$CMSSW_BASE/src/CLoizides/scripts/prod/genPartFlat_template.cfg
+export GENCONFIG=`dirname $CFGTEMPPATH`/gen_config.sh 
+
+if test -z "$EVENTS"; then
+    EVENTS=1000
+fi

@@ -23,6 +23,6 @@ for eta in 0 0.5 1 1.5 2 2.5; do
         export ETAMAX=-$eta;
         FILENAME=upsflat-m${eta}-${pt}.root
 
-        $tstr gen_events.sh $pstr/UpsFlat_settings $FILENAME $runno $events
+        $tstr gen_events.sh $pstr/UpsFlat.settings $FILENAME $runno $events
     done
 done
