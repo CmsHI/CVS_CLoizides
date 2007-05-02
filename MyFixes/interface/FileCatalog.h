@@ -1,8 +1,8 @@
-#ifndef Framework_FileCatalog_h
-#define Framework_FileCatalog_h
+#ifndef FWCore_Catalog_FileCatalog_h
+#define FWCore_Catalog_FileCatalog_h
 //////////////////////////////////////////////////////////////////////
 //
-// $Id: FileCatalog.h,v 1.6 2006/10/05 22:00:25 wmtan Exp $
+// $Id: FileCatalog.h,v 1.1 2007/03/04 04:43:30 wmtan Exp $
 //
 // Class FileCatalog. Common services to manage File catalog
 //

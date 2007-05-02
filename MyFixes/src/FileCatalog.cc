@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 //
-// $Id: FileCatalog.cc,v 1.3 2007/02/22 21:53:08 loizides Exp $
+// $Id: FileCatalog.cc,v 1.4 2007/02/26 17:05:10 loizides Exp $
 //
 // Original Author: Luca Lista
 // Current Author: Bill Tanenbaum
@@ -16,7 +16,7 @@
 #include "FileCatalog/IFCContainer.h"
 #include "StorageSvc/DbType.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
-#include "FWCore/Framework/interface/SiteLocalConfig.h"
+#include "FWCore/Catalog/interface/SiteLocalConfig.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include <boost/algorithm/string.hpp>
@@ -31,7 +31,7 @@ namespace edm {
       url_(pset.getUntrackedParameter<std::string>("catalog", std::string())),
       active_(false) {
     boost::trim(url_);
- }
+  }
 
   FileCatalog::~FileCatalog() {
     if (active_) catalog_.commit();
