@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: gen_config.sh,v 1.2 2007/02/26 21:11:54 loizides Exp $
+# $Id: gen_config.sh,v 1.3 2007/04/25 23:09:01 loizides Exp $
 
 if test -z "$CFGTEMPPATH"; then
     CFGTEMPPATH=$1
@@ -84,13 +84,15 @@ if test -z "$PHIMAX"; then
     PHIMAX=360
 fi
 
-cat $CFGTEMPPATH | sed "s/__FILENAME__/$FILENAME/"    | sed "s/__EVENTS__/$EVENTS/"        \
-                 | sed "s/__FIRSTEVENTNUM__/$FEVNUM/" | sed "s/__FIRSTRUNNUM__/$FRUNNUM/"  \
-                 | sed "s/__MAXEVENTS__/$MAXEVENTS/"  | sed "s/__PARTID__/$PARTID/"        \
+cat $CFGTEMPPATH | sed "s#__MYINPUTFILE__#$MYINPUTFILE#" \
+                 | sed "s#__MYOUTPUTFILE__#$MYOUTPUTFILE#" \
                  | sed "s/__SEED1__/$RANDOM/"         | sed "s/__SEED2__/$RANDOM/"         \
                  | sed "s/__SEED3__/$RANDOM/"         | sed "s/__SEED4__/$RANDOM/"         \
                  | sed "s/__SEED5__/$RANDOM/"         | sed "s/__SEED6__/$RANDOM/"         \
                  | sed "s/__SEED7__/$RANDOM/"         | sed "s/__SEED8__/$RANDOM/"         \
+                 | sed "s#__FILENAME__#$FILENAME#"    | sed "s/__EVENTS__/$EVENTS/"        \
+                 | sed "s/__FIRSTEVENTNUM__/$FEVNUM/" | sed "s/__FIRSTRUNNUM__/$FRUNNUM/"  \
+                 | sed "s/__MAXEVENTS__/$MAXEVENTS/"  | sed "s/__PARTID__/$PARTID/"        \
                  | sed "s/__PTMIN__/$PTMIN/"          | sed "s/__PTMAX__/$PTMAX/"          \
                  | sed "s/__ETAMIN__/$ETAMIN/"        | sed "s/__ETAMAX__/$ETAMAX/"        \
                  | sed "s/__PHIMIN__/$PHIMIN/"        | sed "s/__PHIMAX__/$PHIMAX/"        \

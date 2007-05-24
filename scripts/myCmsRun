@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: myCmsRun,v 1.1 2007/02/28 23:41:21 loizides Exp $
+# $Id: myCmsRun,v 1.2 2007/04/16 19:34:01 loizides Exp $
 
 if test -n "$CMSSW_VERSION"; then
     echo "$0: Running cmsRun for CMSSW version $CMSSW_VERSION"
@@ -25,7 +25,32 @@ else
     PRELOADLIB=""
 fi
 
-echo "$0: Using MYOUTPUTFILE: $MYOUTPUTFILE"
-echo "$0: Using MYHISTOUTPUT: $MYHISTOUTPUT"
+if test -e "$1"; then 
+    CFGTMP=${1}.tmp
+    cp -a $1 $CFGTMP
 
-cmsRun $@
+    if test -n "$MYINPUTFILE"; then
+        echo "$0: Using MYINPUTFILE: $MYINPUTFILE"
+        cat $1 | sed "s#__MYINPUTFILE__#$MYINPUTFILE#" \
+               | sed "s#__MYOUTPUTFILE__#$MYOUTPUTFILE#" \
+               | sed "s/__SEED1__/$RANDOM/"         | sed "s/__SEED2__/$RANDOM/"        \
+               | sed "s/__SEED3__/$RANDOM/"         | sed "s/__SEED4__/$RANDOM/"        \
+               | sed "s/__SEED5__/$RANDOM/"         | sed "s/__SEED6__/$RANDOM/"        \
+               | sed "s/__SEED7__/$RANDOM/"         | sed "s/__SEED8__/$RANDOM/"        \
+               | sed "s#__FILENAME__#$FILENAME#"    | sed "s#__EVENTS__#$EVENTS#"       \
+               | sed "s/__FIRSTEVENTNUM__/$FEVNUM/" | sed "s/__FIRSTRUNNUM__/$FRUNNUM/" \
+               | sed "s/__MAXEVENTS__/$MAXEVENTS/"  | sed "s/__PARTID__/$PARTID/"       \
+               | sed "s/__PTMIN__/$PTMIN/"          | sed "s/__PTMAX__/$PTMAX/"         \
+               | sed "s/__ETAMIN__/$ETAMIN/"        | sed "s/__ETAMAX__/$ETAMAX/"       \
+               | sed "s/__PHIMIN__/$PHIMIN/"        | sed "s/__PHIMAX__/$PHIMAX/"       \
+                   > $CFGTMP
+    fi
+
+    echo "$0: Using MYOUTPUTFILE: $MYOUTPUTFILE"
+    echo "$0: Using MYHISTOUTPUT: $MYHISTOUTPUT"
+
+    cmsRun $CFGTMP $2 $3 $4 $5 $6 $7 $8 $9
+    rm -f $CFGTMP
+else
+    echo "Can not find config file: $1"
+fi
