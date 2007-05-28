@@ -1,0 +1,30 @@
+# $Id: BuildFile,v 1.3 2007/02/25 23:38:51 loizides Exp $
+
+<use name=Foundation/PluginManager>
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<use name=FWCore/ServiceRegistry>
+<use name=FWCore/MessageLogger>
+<use name=DataFormats/Common>
+<use name=DataFormats/EcalDigi>
+<use name=DataFormats/EcalRecHit>
+<use name=DataFormats/EcalDetId>
+<use name=Geometry/CaloGeometry>
+<use name=Geometry/Records>
+<use name=Geometry/EcalBarrelAlgo>
+<use name=Geometry/EcalEndcapAlgo>
+<use name=DataFormats/GeometryVector>
+<use name=SimDataFormats/CaloHit>
+<use name=SimDataFormats/Track>
+<use name=SimDataFormats/Vertex>
+<use name=SimDataFormats/HepMCProduct>
+<use name=hepmc>
+<use name=root>
+<use name=CLoizides/Utils>
+<flags SEAL_PLUGIN_NAME="CLoizidesEcalAna">
+<export>
+   <lib name=CLoizidesEcalAna>
+   <use name=hepmc>
+   <use name=root>
+   <use name=CLoizides/Utils>
+</export>
