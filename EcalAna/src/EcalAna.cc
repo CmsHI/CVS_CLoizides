@@ -13,7 +13,7 @@
 //
 // Original Author:  Constantin Loizides
 //         Created:  Tue Feb 22 12:50:51 EST 2007
-// $Id: EcalAna.cc,v 1.1 2007/05/28 10:31:20 loizides Exp $
+// $Id: EcalAna.cc,v 1.2 2007/06/05 15:20:42 loizides Exp $
 //
 //
 
@@ -242,10 +242,10 @@ EcalAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          z+=v->position().z();
          counter++;
       }
-      x/=counter;
-      y/=counter;
-      z/=counter;
-      zvertex_=z/10;
+      x/=counter/10;
+      y/=counter/10;
+      z/=counter/10;
+      zvertex_=z;
       rvertex_=TMath::Sqrt(x*x+y*y);
    }
    
@@ -344,6 +344,7 @@ EcalAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
    }
 
+   // loop over EE island clusters
    if (EEclusters_) {
       for(reco::BasicClusterCollection::const_iterator iclu = EEclusters_->begin();
           iclu != EEclusters_->end(); ++iclu) {
@@ -353,7 +354,7 @@ EcalAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
    }
 
-   // loop over EB island clusters
+   // loop over EB super clusters
    if (EBsclusters_) {
       for(reco::SuperClusterCollection::const_iterator sclu = EBsclusters_->begin();
           sclu != EBsclusters_->end(); ++sclu) {
@@ -363,6 +364,7 @@ EcalAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
    }
 
+   // loop over EE super clusters
    if (EEsclusters_) {
       for(reco::SuperClusterCollection::const_iterator sclu = EEsclusters_->begin();
           sclu != EEsclusters_->end(); ++sclu) {
@@ -371,20 +373,6 @@ EcalAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             mEtaPhi_sc->Fill(sclu->eta(), sclu->phi(), et);
       }
    }
-
-#if 0  // loop over the Basic clusters and fill the histogram
-  for(reco::BasicClusterCollection::const_iterator aClus = islandBarrelBasicClusters->begin();
-                                                    aClus != islandBarrelBasicClusters->end(); aClus++) {
-    h1_islandEBBCEnergy_->Fill( aClus->energy() );
-    h1_islandEBBCXtals_->Fill(  aClus->getHitsByDetId().size() );
-    str << "energy: " << aClus->energy()
-        << "\te5x5: " << (*islandEBShapes)[iClus].e5x5()
-        << "\te2x2: " << (*islandEBShapes)[iClus].e2x2()
-        << "\n";
-    h1_islandEBBCe5x5_->Fill( (*islandEBShapes)[iClus].e5x5() );
-  }
-#endif
-
 }
 
 // ------------ method called once each job just before starting event loop  ------------
