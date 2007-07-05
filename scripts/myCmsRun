@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: myCmsRun,v 1.2 2007/04/16 19:34:01 loizides Exp $
+# $Id: myCmsRun,v 1.3 2007/05/24 11:29:30 loizides Exp $
 
 if test -n "$CMSSW_VERSION"; then
     echo "$0: Running cmsRun for CMSSW version $CMSSW_VERSION"
@@ -7,6 +7,7 @@ else
     echo "$0: CMSSW environment not properly set"
     exit 1
 fi
+
 
 DATESTR=`date +%s`
 if test -z "$MYHISTOUTPUT"; then
@@ -25,13 +26,30 @@ else
     PRELOADLIB=""
 fi
 
+
 if test -e "$1"; then 
-    CFGTMP=${1}.tmp
+    CFGTMP=/tmp/${USER}-mycmsrun-`basename ${1}`
     cp -a $1 $CFGTMP
 
+    if test -n "`grep MYOUTPUTFILE $CFGTMP`"; then
+        echo "$0: Using MYOUTPUTFILE: $MYOUTPUTFILE"
+    fi
+
+    if test -n "`grep MYHISTOUTPUT $CFGTMP`"; then
+        echo "$0: Using MYHISTOUTPUT: $MYHISTOUTPUT"
+    fi
+
     if test -n "$MYINPUTFILE"; then
-        echo "$0: Using MYINPUTFILE: $MYINPUTFILE"
+        if test -n "`grep MYINPUTFILE $CFGTMP`"; then
+            echo "$0: Using MYINPUTFILE: $MYINPUTFILE"
+        fi
+
+        if test -n "`grep MYMIXINPUTFILE $CFGTMP`"; then
+            echo "$0: Using MYMIXINPUTFILE: $MYMIXINPUTFILE"
+        fi
+
         cat $1 | sed "s#__MYINPUTFILE__#$MYINPUTFILE#" \
+               | sed "s#__MYMIXINPUTFILE__#$MYMIXINPUTFILE#" \
                | sed "s#__MYOUTPUTFILE__#$MYOUTPUTFILE#" \
                | sed "s/__SEED1__/$RANDOM/"         | sed "s/__SEED2__/$RANDOM/"        \
                | sed "s/__SEED3__/$RANDOM/"         | sed "s/__SEED4__/$RANDOM/"        \
@@ -46,11 +64,10 @@ if test -e "$1"; then
                    > $CFGTMP
     fi
 
-    echo "$0: Using MYOUTPUTFILE: $MYOUTPUTFILE"
-    echo "$0: Using MYHISTOUTPUT: $MYHISTOUTPUT"
-
-    cmsRun $CFGTMP $2 $3 $4 $5 $6 $7 $8 $9
-    rm -f $CFGTMP
+    if test -z "$NOCMSRUN"; then 
+        cmsRun $CFGTMP $2 $3 $4 $5 $6 $7 $8 $9
+        rm -f $CFGTMP
+    fi
 else
-    echo "Can not find config file: $1"
+    echo "$0: Can not find config file: $1"
 fi
