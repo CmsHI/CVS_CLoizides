@@ -1,0 +1,20 @@
+# $Id: BuildFile,v 1.2 2007/07/02 10:50:53 loizides Exp $
+
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<use name=FWCore/PluginManager>
+<use name=FWCore/ServiceRegistry>
+<use name=FWCore/MessageLogger>
+<use name=DataFormats/Common>
+<use name=DataFormats/JetReco>
+<use name=SimDataFormats/HepMCProduct>
+<use name=hepmc>
+<use name=root>
+<use name=CLoizides/Utils>
+<flags EDM_PLUGIN=1>
+<export file=JetAna.cc>
+<use name=SimDataFormats/HepMCProduct>
+<use name=hepmc>
+<use name=root>
+<use name=CLoizides/Utils>
+</export>
