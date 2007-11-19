@@ -1,4 +1,4 @@
-# $Id: BuildFile,v 1.2 2007/07/02 10:50:53 loizides Exp $
+# $Id: BuildFile,v 1.1 2007/11/19 15:22:43 loizides Exp $
 
 <use name=FWCore/Framework>
 <use name=FWCore/ParameterSet>
@@ -8,6 +8,7 @@
 <use name=DataFormats/Common>
 <use name=DataFormats/JetReco>
 <use name=SimDataFormats/HepMCProduct>
+<use name=SimDataFormats/CrossingFrame>
 <use name=hepmc>
 <use name=root>
 <use name=CLoizides/Utils>

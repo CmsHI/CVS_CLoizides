@@ -1,4 +1,4 @@
-// $Id: JetAna.h,v 1.2 2007/06/05 15:20:41 loizides Exp $
+// $Id: JetAna.cc,v 1.1 2007/11/19 15:22:44 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -71,14 +71,12 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
 {
    // now do what ever initialization is needed
 
-   resfile_  = TFile::Open(resfilename_.c_str(),"recreate");
-   resfile_->cd();
    resntuple_ = new TNtuple("cjets","cjets",
                             "jet:jphi:jeta:"
                             "dtrg:trgid:trget:trgphi:trgeta:"
                             "dpa:paid:paet:paphi:paeta:"
                             "dpb:pbid:pbet:pbphi:pbeta");
-   resntuple_->SetAutoSave();
+   resntuple_->SetDirectory(0);
 }
 
 JetAna::~JetAna()
@@ -225,9 +223,13 @@ JetAna::beginJob(const edm::EventSetup &iSetup) {
 void 
 JetAna::endJob() {
    if(resntuple_) {
+      TDirectory::TContext context(0);
+      resfile_  = TFile::Open(resfilename_.c_str(),"recreate","",6);
       resntuple_->Write();
       resfile_->Close();
       delete resfile_;
+      resntuple_=0;
+      resfile_=0;
    }
 }
 
