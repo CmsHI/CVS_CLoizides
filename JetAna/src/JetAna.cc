@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.2 2007/11/19 17:25:50 loizides Exp $
+// $Id: JetAna.cc,v 1.3 2007/11/20 10:21:08 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -51,6 +51,7 @@ class JetAna : public edm::EDAnalyzer {
 
       double  deltaR(double phi1, double phi2, double eta1, double eta2) const;
       double deltaR2(double phi1, double phi2, double eta1, double eta2) const;
+      double deltaphi(double phi1, double phi2) const;
 
       edm::InputTag hmcsrc_;
       edm::InputTag jetsrc_;
@@ -74,8 +75,10 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
 
    resntuple_ = new TNtuple("cjets","cjets",
                             "jet:jphi:jeta:jmat:"
-                            "dr:pid:pet:pphi:peta:istrg:"
-                            "drtrg:drp1:drp2");
+                            "isnear:dr:pid:pet:pphi:peta:"
+                            "trgid:trget:trgphi:trgeta:"
+                            "drtrg:drnear:draway:"
+                            "dphitrg:dphinear:dphiaway");
    resntuple2_ = new TNtuple("cpartons","cpartons",
                              "pid:pet:pphi:peta:pmat:istrg:"
                              "dr:jet:jphi:jeta");
@@ -179,9 +182,9 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          double eta=jet.eta();
          double phi=jet.phi();
 
-         double dtrig = deltaR(phi,trpa->momentum().phi(),eta,trpa->momentum().eta());
-         if(dtrig<dbnear) {
-            dbnear=dtrig;
+         double dnear = deltaR(phi,near->momentum().phi(),eta,near->momentum().eta());
+         if(dnear<dbnear) {
+            dbnear=dnear;
             jetncounter=counter;
             jetn=&jet;
          }
@@ -195,8 +198,8 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          ++counter;
       }
 
-      if(dbnear>0.5) jetncounter=-1;
-      if(dbaway>0.5) jetacounter=-1;
+      if(dbnear>0.3) jetncounter=-1;
+      if(dbaway>0.3) jetacounter=-1;
 
       counter=0;
       for(CaloJetCollection::const_iterator jitr = jets_->begin ();
@@ -212,30 +215,38 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          nvals[fn++] = jet.phi();
          nvals[fn++] = jet.eta();
          if(counter==jetncounter) {
-            nvals[fn++] = 1;
+            nvals[fn++] = 1; //ismatched
+            nvals[fn++] = 1; //isnear
             nvals[fn++] = dbnear;
+            nvals[fn++] = near->pdg_id();
+            nvals[fn++] = near->momentum().perp();         
+            nvals[fn++] = near->momentum().phi();
+            nvals[fn++] = near->momentum().eta();
             nvals[fn++] = trpa->pdg_id();
             nvals[fn++] = trpa->momentum().perp();         
             nvals[fn++] = trpa->momentum().phi();
             nvals[fn++] = trpa->momentum().eta();
-            nvals[fn++] = 1;
          } else if (counter==jetacounter) {
-            nvals[fn++] = 1;
+            nvals[fn++] = 1; //ismatched
+            nvals[fn++] = 0; //isaway
             nvals[fn++] = dbaway;
             nvals[fn++] = away->pdg_id();
             nvals[fn++] = away->momentum().perp();         
             nvals[fn++] = away->momentum().phi();
             nvals[fn++] = away->momentum().eta();
-            nvals[fn++] = 0;
+            fn+=4;
          } else {
-            fn+=7;
+            fn+=11;
          }
          nvals[fn++]=deltaR(jet.phi(),trpa->momentum().phi(),
                             jet.eta(),trpa->momentum().eta());
-         nvals[fn++]=deltaR(near->momentum().phi(),trpa->momentum().phi(),
-                            near->momentum().eta(),trpa->momentum().eta());
-         nvals[fn++]=deltaR(away->momentum().phi(),trpa->momentum().phi(),
-                            away->momentum().eta(),trpa->momentum().eta());
+         nvals[fn++]=deltaR(jet.phi(),near->momentum().phi(),
+                            jet.eta(),near->momentum().eta());
+         nvals[fn++]=deltaR(jet.phi(),away->momentum().phi(),
+                            jet.eta(),away->momentum().eta());
+         nvals[fn++]=deltaphi(jet.phi(),trpa->momentum().phi());
+         nvals[fn++]=deltaphi(jet.phi(),near->momentum().phi());
+         nvals[fn++]=deltaphi(jet.phi(),away->momentum().phi());
 
          resntuple_->Fill(nvals);
          ++counter;
@@ -333,6 +344,13 @@ double JetAna::deltaR2(double phi1, double phi2, double eta1, double eta2) const
 
 double JetAna::deltaR(double phi1, double phi2, double eta1, double eta2) const {
    return TMath::Sqrt(deltaR2(phi1,phi2,eta1,eta2));
+}
+
+double JetAna::deltaphi(double phi1, double phi2) const {
+   double diff1 = phi1-phi2;
+   while (diff1 >= TMath::Pi()) diff1 -= 2.*TMath::Pi();
+   while (diff1 < -TMath::Pi()) diff1 += 2.*TMath::Pi();
+   return TMath::Abs(diff1);
 }
 
 DEFINE_FWK_MODULE( JetAna );
