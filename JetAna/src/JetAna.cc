@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.1 2007/11/19 15:22:44 loizides Exp $
+// $Id: JetAna.cc,v 1.2 2007/11/19 17:25:50 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -61,6 +61,7 @@ class JetAna : public edm::EDAnalyzer {
       const reco::CaloJetCollection *jets_;
       TFile *resfile_;
       TNtuple *resntuple_;
+      TNtuple *resntuple2_;
 };
 
 JetAna::JetAna(const edm::ParameterSet& iConfig) :
@@ -72,11 +73,14 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
    // now do what ever initialization is needed
 
    resntuple_ = new TNtuple("cjets","cjets",
-                            "jet:jphi:jeta:"
-                            "dtrg:trgid:trget:trgphi:trgeta:"
-                            "dpa:paid:paet:paphi:paeta:"
-                            "dpb:pbid:pbet:pbphi:pbeta");
+                            "jet:jphi:jeta:jmat:"
+                            "dr:pid:pet:pphi:peta:istrg:"
+                            "drtrg:drp1:drp2");
+   resntuple2_ = new TNtuple("cpartons","cpartons",
+                             "pid:pet:pphi:peta:pmat:istrg:"
+                             "dr:jet:jphi:jeta");
    resntuple_->SetDirectory(0);
+   resntuple2_->SetDirectory(0);
 }
 
 JetAna::~JetAna()
@@ -97,8 +101,8 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    getHepMC(iEvent,iSetup);
 
    const GenParticle *trpa = 0;
-   const GenParticle *par1 = 0;
-   const GenParticle *par2 = 0;
+   const GenParticle *away = 0;
+   const GenParticle *near = 0;
 
    if(hmcevent_) {
       double ptmax=0;
@@ -120,6 +124,13 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             ptmax = part->momentum().perp();
          }
       }
+      if(trpa==0) {
+         edm::LogInfo("JetAna") << "Did not find trigger particle. Omitting event!";
+         return;
+      }
+
+      const GenParticle *par1 = 0;
+      const GenParticle *par2 = 0;
 
       Int_t pcounter=0;
       for (GenEvent::particle_const_iterator pitr=hmcevent_->particles_begin(); 
@@ -134,6 +145,17 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          else if (pcounter>10) 
             break;
       }
+      double dp1 = deltaR(trpa->momentum().phi(),par1->momentum().phi(),
+                          trpa->momentum().eta(),par1->momentum().eta());
+      double dp2 = deltaR(trpa->momentum().phi(),par2->momentum().phi(),
+                          trpa->momentum().eta(),par2->momentum().eta());
+      if(dp1<dp2) {
+         near=par1;
+         away=par2;
+      } else {
+         near=par2;
+         away=par1;
+      }
    }
 
    // get calo jets
@@ -141,72 +163,101 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    if(jets_) {
 
-      float nvals[100];
-      for(int i = 0; i < 100; i++) nvals[i] = 0;
+      //find matches to near and away side
+      const CaloJet *jetn = 0;
+      int jetncounter=-1;
+      double dbnear=1e12;
+      const CaloJet *jeta = 0;
+      int jetacounter=-1;
+      double dbaway=1e12;
 
+      int counter=0;
+      for(CaloJetCollection::const_iterator jitr = jets_->begin ();
+          jitr != jets_->end (); jitr++) {
+         
+         const CaloJet jet = *jitr;
+         double eta=jet.eta();
+         double phi=jet.phi();
+
+         double dtrig = deltaR(phi,trpa->momentum().phi(),eta,trpa->momentum().eta());
+         if(dtrig<dbnear) {
+            dbnear=dtrig;
+            jetncounter=counter;
+            jetn=&jet;
+         }
+         double daway = deltaR(phi,away->momentum().phi(),eta,away->momentum().eta());
+         if(daway<dbaway) {
+            dbaway=daway;
+            jetacounter=counter;
+            jeta=&jet;
+         }
+
+         ++counter;
+      }
+
+      if(dbnear>0.5) jetncounter=-1;
+      if(dbaway>0.5) jetacounter=-1;
+
+      counter=0;
       for(CaloJetCollection::const_iterator jitr = jets_->begin ();
           jitr != jets_->end (); jitr++) {
          
          Int_t fn = 0;
+         float nvals[100];
+         memset(nvals,0,100*sizeof(float));
 
          const CaloJet jet = *jitr;
-        
-         double eta=jet.eta();
-         double phi=jet.phi();
-
-         double diftrg = 1e12;
-         if(trpa) 
-            diftrg = deltaR(phi,trpa->momentum().phi(),eta,trpa->momentum().eta());
-
-         double difp1 = 1e12;
-         if(par1)
-            difp1 = deltaR(phi,par1->momentum().phi(),eta,par1->momentum().eta());
-               
-         double difp2 = 1e12;
-         if(par2)
-            difp2 = deltaR(phi,par2->momentum().phi(),eta,par2->momentum().eta());
 
          nvals[fn++] = jet.et();
          nvals[fn++] = jet.phi();
          nvals[fn++] = jet.eta();
-         nvals[fn++] = diftrg;
-         if(trpa) {
+         if(counter==jetncounter) {
+            nvals[fn++] = 1;
+            nvals[fn++] = dbnear;
             nvals[fn++] = trpa->pdg_id();
             nvals[fn++] = trpa->momentum().perp();         
             nvals[fn++] = trpa->momentum().phi();
             nvals[fn++] = trpa->momentum().eta();
+            nvals[fn++] = 1;
+         } else if (counter==jetacounter) {
+            nvals[fn++] = 1;
+            nvals[fn++] = dbaway;
+            nvals[fn++] = away->pdg_id();
+            nvals[fn++] = away->momentum().perp();         
+            nvals[fn++] = away->momentum().phi();
+            nvals[fn++] = away->momentum().eta();
+            nvals[fn++] = 0;
          } else {
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
+            fn+=7;
          }
-         nvals[fn++] = difp1;
-         if(par1) {
-            nvals[fn++] = par1->pdg_id();
-            nvals[fn++] = par1->momentum().perp();         
-            nvals[fn++] = par1->momentum().phi();
-            nvals[fn++] = par1->momentum().eta();
-         } else {
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-         }
-         nvals[fn++] = difp2;
-         if(par2) {
-            nvals[fn++] = par2->pdg_id();
-            nvals[fn++] = par2->momentum().perp();         
-            nvals[fn++] = par2->momentum().phi();
-            nvals[fn++] = par2->momentum().eta();
-         } else {
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-            nvals[fn++] = 0;
-         }
+         nvals[fn++]=deltaR(jet.phi(),trpa->momentum().phi(),
+                            jet.eta(),trpa->momentum().eta());
+         nvals[fn++]=deltaR(near->momentum().phi(),trpa->momentum().phi(),
+                            near->momentum().eta(),trpa->momentum().eta());
+         nvals[fn++]=deltaR(away->momentum().phi(),trpa->momentum().phi(),
+                            away->momentum().eta(),trpa->momentum().eta());
 
          resntuple_->Fill(nvals);
+         ++counter;
+      }
+
+      if(1) {
+         if(jetncounter>=0)
+            resntuple2_->Fill(trpa->pdg_id(), 
+                              trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
+                              1,1,dbnear,jetn->et(),jetn->phi(),jetn->eta());
+         else 
+            resntuple2_->Fill(trpa->pdg_id(), 
+                              trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
+                              0,1,1e12,1e12,1e12,1e12);
+         if(jetacounter>=0)
+            resntuple2_->Fill(away->pdg_id(), 
+                              away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
+                              1,0,dbaway,jeta->et(),jeta->phi(),jeta->eta());
+         else 
+            resntuple2_->Fill(away->pdg_id(), 
+                              away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
+                              0,0,1e12,1e12,1e12,1e12);
       }
    }
 
@@ -226,6 +277,7 @@ JetAna::endJob() {
       TDirectory::TContext context(0);
       resfile_  = TFile::Open(resfilename_.c_str(),"recreate","",6);
       resntuple_->Write();
+      resntuple2_->Write();
       resfile_->Close();
       delete resfile_;
       resntuple_=0;
