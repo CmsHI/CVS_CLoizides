@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.3 2007/11/20 10:21:08 loizides Exp $
+// $Id: JetAna.cc,v 1.4 2007/11/20 14:08:10 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -81,6 +81,7 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
                             "dphitrg:dphinear:dphiaway");
    resntuple2_ = new TNtuple("cpartons","cpartons",
                              "pid:pet:pphi:peta:pmat:istrg:"
+                             "trgid:trget:trgphi:trgeta:"
                              "dr:jet:jphi:jeta");
    resntuple_->SetDirectory(0);
    resntuple2_->SetDirectory(0);
@@ -254,20 +255,20 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       if(1) {
          if(jetncounter>=0)
-            resntuple2_->Fill(trpa->pdg_id(), 
-                              trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
+            resntuple2_->Fill(near->pdg_id(),near->momentum().perp(),near->momentum().phi(),near->momentum().eta(),
+                              trpa->pdg_id(),trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
                               1,1,dbnear,jetn->et(),jetn->phi(),jetn->eta());
          else 
-            resntuple2_->Fill(trpa->pdg_id(), 
-                              trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
+            resntuple2_->Fill(near->pdg_id(),near->momentum().perp(),near->momentum().phi(),near->momentum().eta(),
+                              trpa->pdg_id(),trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
                               0,1,1e12,1e12,1e12,1e12);
          if(jetacounter>=0)
-            resntuple2_->Fill(away->pdg_id(), 
-                              away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
+            resntuple2_->Fill(away->pdg_id(),away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
+                              0,0,0,0,
                               1,0,dbaway,jeta->et(),jeta->phi(),jeta->eta());
          else 
-            resntuple2_->Fill(away->pdg_id(), 
-                              away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
+            resntuple2_->Fill(away->pdg_id(),away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
+                              0,0,0,0,
                               0,0,1e12,1e12,1e12,1e12);
       }
    }
