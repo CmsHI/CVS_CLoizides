@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.4 2007/11/20 14:08:10 loizides Exp $
+// $Id: JetAna.cc,v 1.5 2007/11/20 16:53:12 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -80,8 +80,9 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
                             "drtrg:drnear:draway:"
                             "dphitrg:dphinear:dphiaway");
    resntuple2_ = new TNtuple("cpartons","cpartons",
-                             "pid:pet:pphi:peta:pmat:istrg:"
+                             "pid:pet:pphi:peta:"
                              "trgid:trget:trgphi:trgeta:"
+                             "pmat:isnear:"
                              "dr:jet:jphi:jeta");
    resntuple_->SetDirectory(0);
    resntuple2_->SetDirectory(0);
@@ -237,7 +238,17 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             nvals[fn++] = away->momentum().eta();
             fn+=4;
          } else {
-            fn+=11;
+            nvals[fn++] = 0; 
+            nvals[fn++] = 2; 
+            nvals[fn++] = 1e12;
+            nvals[fn++] = near->pdg_id();
+            nvals[fn++] = near->momentum().perp();         
+            nvals[fn++] = near->momentum().phi();
+            nvals[fn++] = near->momentum().eta();
+            nvals[fn++] = away->pdg_id();
+            nvals[fn++] = away->momentum().perp();         
+            nvals[fn++] = away->momentum().phi();
+            nvals[fn++] = away->momentum().eta();
          }
          nvals[fn++]=deltaR(jet.phi(),trpa->momentum().phi(),
                             jet.eta(),trpa->momentum().eta());
