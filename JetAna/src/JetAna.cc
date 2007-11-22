@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.5 2007/11/20 16:53:12 loizides Exp $
+// $Id: JetAna.cc,v 1.6 2007/11/21 11:12:27 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -74,7 +74,7 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
    // now do what ever initialization is needed
 
    resntuple_ = new TNtuple("cjets","cjets",
-                            "jet:jphi:jeta:jmat:"
+                            "jet:jphi:jeta:jmat:nmat:amat"
                             "isnear:dr:pid:pet:pphi:peta:"
                             "trgid:trget:trgphi:trgeta:"
                             "drtrg:drnear:draway:"
@@ -82,7 +82,7 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
    resntuple2_ = new TNtuple("cpartons","cpartons",
                              "pid:pet:pphi:peta:"
                              "trgid:trget:trgphi:trgeta:"
-                             "pmat:isnear:"
+                             "pmat:nmat:amat:isnear:"
                              "dr:jet:jphi:jeta");
    resntuple_->SetDirectory(0);
    resntuple2_->SetDirectory(0);
@@ -218,6 +218,8 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          nvals[fn++] = jet.eta();
          if(counter==jetncounter) {
             nvals[fn++] = 1; //ismatched
+            nvals[fn++] = 1; //near matched
+            nvals[fn++] = jetacounter>-1 ? 1:0; 
             nvals[fn++] = 1; //isnear
             nvals[fn++] = dbnear;
             nvals[fn++] = near->pdg_id();
@@ -230,6 +232,8 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             nvals[fn++] = trpa->momentum().eta();
          } else if (counter==jetacounter) {
             nvals[fn++] = 1; //ismatched
+            nvals[fn++] = jetncounter>-1 ? 1:0; 
+            nvals[fn++] = 1; //away matched
             nvals[fn++] = 0; //isaway
             nvals[fn++] = dbaway;
             nvals[fn++] = away->pdg_id();
@@ -239,6 +243,8 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             fn+=4;
          } else {
             nvals[fn++] = 0; 
+            nvals[fn++] = jetncounter>-1 ? 1:0; 
+            nvals[fn++] = jetacounter>-1 ? 1:0; 
             nvals[fn++] = 2; 
             nvals[fn++] = 1e12;
             nvals[fn++] = near->pdg_id();
@@ -265,22 +271,71 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
 
       if(1) {
-         if(jetncounter>=0)
-            resntuple2_->Fill(near->pdg_id(),near->momentum().perp(),near->momentum().phi(),near->momentum().eta(),
-                              trpa->pdg_id(),trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
-                              1,1,dbnear,jetn->et(),jetn->phi(),jetn->eta());
-         else 
-            resntuple2_->Fill(near->pdg_id(),near->momentum().perp(),near->momentum().phi(),near->momentum().eta(),
-                              trpa->pdg_id(),trpa->momentum().perp(),trpa->momentum().phi(),trpa->momentum().eta(),
-                              0,1,1e12,1e12,1e12,1e12);
-         if(jetacounter>=0)
-            resntuple2_->Fill(away->pdg_id(),away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
-                              0,0,0,0,
-                              1,0,dbaway,jeta->et(),jeta->phi(),jeta->eta());
-         else 
-            resntuple2_->Fill(away->pdg_id(),away->momentum().perp(),away->momentum().phi(),away->momentum().eta(),
-                              0,0,0,0,
-                              0,0,1e12,1e12,1e12,1e12);
+         int nfound=jetncounter>-1 ? 1:0;
+         int afound=jetacounter>-1 ? 1:0;
+
+         float nvals[100];
+         Int_t fn = 0;
+         memset(nvals,0,100*sizeof(float));
+         nvals[fn++]=near->pdg_id();
+         nvals[fn++]=near->momentum().perp();
+         nvals[fn++]=near->momentum().phi();
+         nvals[fn++]=near->momentum().eta();
+         nvals[fn++]=trpa->pdg_id();
+         nvals[fn++]=trpa->momentum().perp();
+         nvals[fn++]=trpa->momentum().phi();
+         nvals[fn++]=trpa->momentum().eta();
+         if(jetncounter>=0) {
+            nvals[fn++]=1;
+            nvals[fn++]=1;
+            nvals[fn++]=afound;
+            nvals[fn++]=1;
+            nvals[fn++]=dbnear;
+            nvals[fn++]=jetn->et();
+            nvals[fn++]=jetn->phi();
+            nvals[fn++]=jetn->eta();
+         } else {
+            nvals[fn++]=0;
+            nvals[fn++]=0;
+            nvals[fn++]=afound;
+            nvals[fn++]=1;
+            nvals[fn++]=1e12;
+            nvals[fn++]=1e12;
+            nvals[fn++]=1e12;
+            nvals[fn++]=1e12;
+         }
+         resntuple2_->Fill(nvals);
+
+         fn = 0;
+         memset(nvals,0,100*sizeof(float));
+         nvals[fn++]=away->pdg_id();
+         nvals[fn++]=away->momentum().perp();
+         nvals[fn++]=away->momentum().phi();
+         nvals[fn++]=away->momentum().eta();
+         nvals[fn++]=trpa->pdg_id();
+         nvals[fn++]=trpa->momentum().perp();
+         nvals[fn++]=trpa->momentum().phi();
+         nvals[fn++]=trpa->momentum().eta();
+         if(jetacounter>=0) {
+            nvals[fn++]=1;
+            nvals[fn++]=nfound;
+            nvals[fn++]=1;
+            nvals[fn++]=0;
+            nvals[fn++]=dbaway;
+            nvals[fn++]=jetn->et();
+            nvals[fn++]=jetn->phi();
+            nvals[fn++]=jetn->eta();
+         } else {
+            nvals[fn++]=0;
+            nvals[fn++]=nfound;
+            nvals[fn++]=0;
+            nvals[fn++]=0;
+            nvals[fn++]=1e12;
+            nvals[fn++]=1e12;
+            nvals[fn++]=1e12;
+            nvals[fn++]=1e12;
+         }
+         resntuple2_->Fill(nvals);
       }
    }
 
