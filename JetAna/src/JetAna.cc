@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.6 2007/11/21 11:12:27 loizides Exp $
+// $Id: JetAna.cc,v 1.7 2007/11/22 15:06:00 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -74,7 +74,7 @@ JetAna::JetAna(const edm::ParameterSet& iConfig) :
    // now do what ever initialization is needed
 
    resntuple_ = new TNtuple("cjets","cjets",
-                            "jet:jphi:jeta:jmat:nmat:amat"
+                            "jet:jphi:jeta:jmat:nmat:amat:"
                             "isnear:dr:pid:pet:pphi:peta:"
                             "trgid:trget:trgphi:trgeta:"
                             "drtrg:drnear:draway:"
@@ -322,9 +322,9 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             nvals[fn++]=1;
             nvals[fn++]=0;
             nvals[fn++]=dbaway;
-            nvals[fn++]=jetn->et();
-            nvals[fn++]=jetn->phi();
-            nvals[fn++]=jetn->eta();
+            nvals[fn++]=jeta->et();
+            nvals[fn++]=jeta->phi();
+            nvals[fn++]=jeta->eta();
          } else {
             nvals[fn++]=0;
             nvals[fn++]=nfound;
