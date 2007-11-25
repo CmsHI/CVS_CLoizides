@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.7 2007/11/22 15:06:00 loizides Exp $
+// $Id: JetAna.cc,v 1.8 2007/11/22 17:07:00 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -20,6 +20,7 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "SimDataFormats/HepMCProduct/interface/HepMCProduct.h"
 #include "DataFormats/JetReco/interface/CaloJetCollection.h"
+#include "DataFormats/JetReco/interface/BasicJetCollection.h"
 
 #include "HepMC/GenParticle.h"
 #include "HepMC/GenVertex.h"
@@ -31,8 +32,6 @@
 #include "TString.h"
 #include "TFile.h"
 #include "TNtuple.h"
-
-#include "CLoizides/Utils/interface/THistFileService.h"
 
 class TH2;
 
@@ -59,7 +58,8 @@ class JetAna : public edm::EDAnalyzer {
 
       int evcounter_;
       const HepMC::GenEvent *hmcevent_;
-      const reco::CaloJetCollection *jets_;
+      const reco::CaloJetCollection *cjets_;
+      const reco::BasicJetCollection *bjets_;
       TFile *resfile_;
       TNtuple *resntuple_;
       TNtuple *resntuple2_;
@@ -165,20 +165,20 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    // get calo jets
    getJets(iEvent,iSetup);
+   if(bjets_==0 && cjets_==0) return;
 
-   if(jets_) {
+   //find matches to near and away side
+   const Jet *jetn = 0;
+   int jetncounter=-1;
+   double dbnear=1e12;
+   const Jet *jeta = 0;
+   int jetacounter=-1;
+   double dbaway=1e12;
 
-      //find matches to near and away side
-      const CaloJet *jetn = 0;
-      int jetncounter=-1;
-      double dbnear=1e12;
-      const CaloJet *jeta = 0;
-      int jetacounter=-1;
-      double dbaway=1e12;
-
+   if(cjets_) {
       int counter=0;
-      for(CaloJetCollection::const_iterator jitr = jets_->begin ();
-          jitr != jets_->end (); jitr++) {
+      for(CaloJetCollection::const_iterator jitr = cjets_->begin();
+          jitr != cjets_->end(); jitr++) {
          
          const CaloJet jet = *jitr;
          double eta=jet.eta();
@@ -196,16 +196,40 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jetacounter=counter;
             jeta=&jet;
          }
-
          ++counter;
       }
+   } else {
+      int counter=0;
+      for(BasicJetCollection::const_iterator jitr = bjets_->begin();
+          jitr != bjets_->end(); jitr++) {
+         
+         const BasicJet jet = *jitr;
+         double eta=jet.eta();
+         double phi=jet.phi();
 
-      if(dbnear>0.3) jetncounter=-1;
-      if(dbaway>0.3) jetacounter=-1;
+         double dnear = deltaR(phi,near->momentum().phi(),eta,near->momentum().eta());
+         if(dnear<dbnear) {
+            dbnear=dnear;
+            jetncounter=counter;
+            jetn=&jet;
+         }
+         double daway = deltaR(phi,away->momentum().phi(),eta,away->momentum().eta());
+         if(daway<dbaway) {
+            dbaway=daway;
+            jetacounter=counter;
+            jeta=&jet;
+         }
+         ++counter;
+      }
+   }
 
-      counter=0;
-      for(CaloJetCollection::const_iterator jitr = jets_->begin ();
-          jitr != jets_->end (); jitr++) {
+   if(dbnear>0.3) jetncounter=-1;
+   if(dbaway>0.3) jetacounter=-1;
+
+   if(cjets_) {
+      int counter=0;
+      for(CaloJetCollection::const_iterator jitr = cjets_->begin();
+          jitr != cjets_->end(); jitr++) {
          
          Int_t fn = 0;
          float nvals[100];
@@ -240,7 +264,10 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             nvals[fn++] = away->momentum().perp();         
             nvals[fn++] = away->momentum().phi();
             nvals[fn++] = away->momentum().eta();
-            fn+=4;
+            nvals[fn++] = trpa->pdg_id();
+            nvals[fn++] = trpa->momentum().perp();         
+            nvals[fn++] = trpa->momentum().phi();
+            nvals[fn++] = trpa->momentum().eta();
          } else {
             nvals[fn++] = 0; 
             nvals[fn++] = jetncounter>-1 ? 1:0; 
@@ -269,74 +296,144 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          resntuple_->Fill(nvals);
          ++counter;
       }
-
-      if(1) {
-         int nfound=jetncounter>-1 ? 1:0;
-         int afound=jetacounter>-1 ? 1:0;
-
-         float nvals[100];
+   } else {
+      int counter=0;
+      for(BasicJetCollection::const_iterator jitr = bjets_->begin();
+          jitr != bjets_->end(); jitr++) {
+         
          Int_t fn = 0;
+         float nvals[100];
          memset(nvals,0,100*sizeof(float));
-         nvals[fn++]=near->pdg_id();
-         nvals[fn++]=near->momentum().perp();
-         nvals[fn++]=near->momentum().phi();
-         nvals[fn++]=near->momentum().eta();
-         nvals[fn++]=trpa->pdg_id();
-         nvals[fn++]=trpa->momentum().perp();
-         nvals[fn++]=trpa->momentum().phi();
-         nvals[fn++]=trpa->momentum().eta();
-         if(jetncounter>=0) {
-            nvals[fn++]=1;
-            nvals[fn++]=1;
-            nvals[fn++]=afound;
-            nvals[fn++]=1;
-            nvals[fn++]=dbnear;
-            nvals[fn++]=jetn->et();
-            nvals[fn++]=jetn->phi();
-            nvals[fn++]=jetn->eta();
-         } else {
-            nvals[fn++]=0;
-            nvals[fn++]=0;
-            nvals[fn++]=afound;
-            nvals[fn++]=1;
-            nvals[fn++]=1e12;
-            nvals[fn++]=1e12;
-            nvals[fn++]=1e12;
-            nvals[fn++]=1e12;
-         }
-         resntuple2_->Fill(nvals);
 
-         fn = 0;
-         memset(nvals,0,100*sizeof(float));
-         nvals[fn++]=away->pdg_id();
-         nvals[fn++]=away->momentum().perp();
-         nvals[fn++]=away->momentum().phi();
-         nvals[fn++]=away->momentum().eta();
-         nvals[fn++]=trpa->pdg_id();
-         nvals[fn++]=trpa->momentum().perp();
-         nvals[fn++]=trpa->momentum().phi();
-         nvals[fn++]=trpa->momentum().eta();
-         if(jetacounter>=0) {
-            nvals[fn++]=1;
-            nvals[fn++]=nfound;
-            nvals[fn++]=1;
-            nvals[fn++]=0;
-            nvals[fn++]=dbaway;
-            nvals[fn++]=jeta->et();
-            nvals[fn++]=jeta->phi();
-            nvals[fn++]=jeta->eta();
+         const BasicJet jet = *jitr;
+
+         nvals[fn++] = jet.et();
+         nvals[fn++] = jet.phi();
+         nvals[fn++] = jet.eta();
+         if(counter==jetncounter) {
+            nvals[fn++] = 1; //ismatched
+            nvals[fn++] = 1; //near matched
+            nvals[fn++] = jetacounter>-1 ? 1:0; 
+            nvals[fn++] = 1; //isnear
+            nvals[fn++] = dbnear;
+            nvals[fn++] = near->pdg_id();
+            nvals[fn++] = near->momentum().perp();         
+            nvals[fn++] = near->momentum().phi();
+            nvals[fn++] = near->momentum().eta();
+            nvals[fn++] = trpa->pdg_id();
+            nvals[fn++] = trpa->momentum().perp();         
+            nvals[fn++] = trpa->momentum().phi();
+            nvals[fn++] = trpa->momentum().eta();
+         } else if (counter==jetacounter) {
+            nvals[fn++] = 1; //ismatched
+            nvals[fn++] = jetncounter>-1 ? 1:0; 
+            nvals[fn++] = 1; //away matched
+            nvals[fn++] = 0; //isaway
+            nvals[fn++] = dbaway;
+            nvals[fn++] = away->pdg_id();
+            nvals[fn++] = away->momentum().perp();         
+            nvals[fn++] = away->momentum().phi();
+            nvals[fn++] = away->momentum().eta();
+            nvals[fn++] = trpa->pdg_id();
+            nvals[fn++] = trpa->momentum().perp();         
+            nvals[fn++] = trpa->momentum().phi();
+            nvals[fn++] = trpa->momentum().eta();
          } else {
-            nvals[fn++]=0;
-            nvals[fn++]=nfound;
-            nvals[fn++]=0;
-            nvals[fn++]=0;
-            nvals[fn++]=1e12;
-            nvals[fn++]=1e12;
-            nvals[fn++]=1e12;
-            nvals[fn++]=1e12;
+            nvals[fn++] = 0; 
+            nvals[fn++] = jetncounter>-1 ? 1:0; 
+            nvals[fn++] = jetacounter>-1 ? 1:0; 
+            nvals[fn++] = 2; 
+            nvals[fn++] = 1e12;
+            nvals[fn++] = near->pdg_id();
+            nvals[fn++] = near->momentum().perp();         
+            nvals[fn++] = near->momentum().phi();
+            nvals[fn++] = near->momentum().eta();
+            nvals[fn++] = away->pdg_id();
+            nvals[fn++] = away->momentum().perp();         
+            nvals[fn++] = away->momentum().phi();
+            nvals[fn++] = away->momentum().eta();
          }
-         resntuple2_->Fill(nvals);
+         nvals[fn++]=deltaR(jet.phi(),trpa->momentum().phi(),
+                            jet.eta(),trpa->momentum().eta());
+         nvals[fn++]=deltaR(jet.phi(),near->momentum().phi(),
+                            jet.eta(),near->momentum().eta());
+         nvals[fn++]=deltaR(jet.phi(),away->momentum().phi(),
+                            jet.eta(),away->momentum().eta());
+         nvals[fn++]=deltaphi(jet.phi(),trpa->momentum().phi());
+         nvals[fn++]=deltaphi(jet.phi(),near->momentum().phi());
+         nvals[fn++]=deltaphi(jet.phi(),away->momentum().phi());
+
+         resntuple_->Fill(nvals);
+         ++counter;
       }
+   }
+
+   if(1) {
+      int nfound=jetncounter>-1 ? 1:0;
+      int afound=jetacounter>-1 ? 1:0;
+
+      float nvals[100];
+      Int_t fn = 0;
+      memset(nvals,0,100*sizeof(float));
+      nvals[fn++]=near->pdg_id();
+      nvals[fn++]=near->momentum().perp();
+      nvals[fn++]=near->momentum().phi();
+      nvals[fn++]=near->momentum().eta();
+      nvals[fn++]=trpa->pdg_id();
+      nvals[fn++]=trpa->momentum().perp();
+      nvals[fn++]=trpa->momentum().phi();
+      nvals[fn++]=trpa->momentum().eta();
+      if(jetncounter>=0) {
+         nvals[fn++]=1;
+         nvals[fn++]=1;
+         nvals[fn++]=afound;
+         nvals[fn++]=1;
+         nvals[fn++]=dbnear;
+         nvals[fn++]=jetn->et();
+         nvals[fn++]=jetn->phi();
+         nvals[fn++]=jetn->eta();
+      } else {
+         nvals[fn++]=0;
+         nvals[fn++]=0;
+         nvals[fn++]=afound;
+         nvals[fn++]=1;
+         nvals[fn++]=1e12;
+         nvals[fn++]=1e12;
+         nvals[fn++]=1e12;
+         nvals[fn++]=1e12;
+      }
+      resntuple2_->Fill(nvals);
+
+      fn = 0;
+      memset(nvals,0,100*sizeof(float));
+      nvals[fn++]=away->pdg_id();
+      nvals[fn++]=away->momentum().perp();
+      nvals[fn++]=away->momentum().phi();
+      nvals[fn++]=away->momentum().eta();
+      nvals[fn++]=trpa->pdg_id();
+      nvals[fn++]=trpa->momentum().perp();
+      nvals[fn++]=trpa->momentum().phi();
+      nvals[fn++]=trpa->momentum().eta();
+      if(jetacounter>=0) {
+         nvals[fn++]=1;
+         nvals[fn++]=nfound;
+         nvals[fn++]=1;
+         nvals[fn++]=0;
+         nvals[fn++]=dbaway;
+         nvals[fn++]=jeta->et();
+         nvals[fn++]=jeta->phi();
+         nvals[fn++]=jeta->eta();
+      } else {
+         nvals[fn++]=0;
+         nvals[fn++]=nfound;
+         nvals[fn++]=0;
+         nvals[fn++]=0;
+         nvals[fn++]=1e12;
+         nvals[fn++]=1e12;
+         nvals[fn++]=1e12;
+         nvals[fn++]=1e12;
+      }
+      resntuple2_->Fill(nvals);
    }
 
    // count events
@@ -386,13 +483,23 @@ JetAna::getJets(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
    using namespace edm;
    using namespace reco;
 
-   Handle<reco::CaloJetCollection> pJets;
+   bjets_=0;
+   cjets_=0;
+
+   Handle<reco::CaloJetCollection> pcJets;
    try {
-      iEvent.getByLabel(jetsrc_, pJets);
-      jets_ = pJets.product();
-      edm::LogInfo("JetAna") << "total # Jets: " << jets_->size();
+      iEvent.getByLabel(jetsrc_, pcJets);
+      cjets_ = pcJets.product();
+      edm::LogInfo("JetAna") << "total # CaloJets: " << cjets_->size();
    } catch (...) {
-      edm::LogError("JetAna") << "Error! can't get the product " << jetsrc_.encode();
+      Handle<reco::BasicJetCollection> pbJets;
+      try {
+         iEvent.getByLabel(jetsrc_, pbJets);
+         bjets_ = pbJets.product();
+         edm::LogInfo("JetAna") << "total # BasicJets: " << bjets_->size();
+      } catch (...) {
+         edm::LogError("JetAna") << "Error! can't get the product " << jetsrc_.encode();
+      }
    }
 }
 
