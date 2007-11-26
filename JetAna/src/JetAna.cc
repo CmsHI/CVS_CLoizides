@@ -1,4 +1,4 @@
-// $Id: JetAna.cc,v 1.8 2007/11/22 17:07:00 loizides Exp $
+// $Id: JetAna.cc,v 1.9 2007/11/25 15:31:01 loizides Exp $
 
 #ifndef JetAna_JetAna_h
 #define JetAna_JetAna_h
@@ -168,10 +168,10 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    if(bjets_==0 && cjets_==0) return;
 
    //find matches to near and away side
-   const Jet *jetn = 0;
+   double jetnet=0,jetneta=0,jetnphi=0;
    int jetncounter=-1;
    double dbnear=1e12;
-   const Jet *jeta = 0;
+   double jetaet=0,jetaeta=0,jetaphi=0;
    int jetacounter=-1;
    double dbaway=1e12;
 
@@ -188,13 +188,17 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          if(dnear<dbnear) {
             dbnear=dnear;
             jetncounter=counter;
-            jetn=&jet;
+            jetnet=jet.et();
+            jetnphi=phi;
+            jetneta=eta;
          }
          double daway = deltaR(phi,away->momentum().phi(),eta,away->momentum().eta());
          if(daway<dbaway) {
             dbaway=daway;
             jetacounter=counter;
-            jeta=&jet;
+            jetaet=jet.et();
+            jetaphi=phi;
+            jetaeta=eta;
          }
          ++counter;
       }
@@ -211,13 +215,17 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          if(dnear<dbnear) {
             dbnear=dnear;
             jetncounter=counter;
-            jetn=&jet;
+            jetnet=jet.et();
+            jetnphi=phi;
+            jetneta=eta;
          }
          double daway = deltaR(phi,away->momentum().phi(),eta,away->momentum().eta());
          if(daway<dbaway) {
             dbaway=daway;
             jetacounter=counter;
-            jeta=&jet;
+            jetaet=jet.et();
+            jetaphi=phi;
+            jetaeta=eta;
          }
          ++counter;
       }
@@ -389,9 +397,9 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          nvals[fn++]=afound;
          nvals[fn++]=1;
          nvals[fn++]=dbnear;
-         nvals[fn++]=jetn->et();
-         nvals[fn++]=jetn->phi();
-         nvals[fn++]=jetn->eta();
+         nvals[fn++]=jetnet;
+         nvals[fn++]=jetnphi;
+         nvals[fn++]=jetneta;
       } else {
          nvals[fn++]=0;
          nvals[fn++]=0;
@@ -420,9 +428,9 @@ JetAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          nvals[fn++]=1;
          nvals[fn++]=0;
          nvals[fn++]=dbaway;
-         nvals[fn++]=jeta->et();
-         nvals[fn++]=jeta->phi();
-         nvals[fn++]=jeta->eta();
+         nvals[fn++]=jetaet;
+         nvals[fn++]=jetaphi;
+         nvals[fn++]=jetaeta;
       } else {
          nvals[fn++]=0;
          nvals[fn++]=nfound;
