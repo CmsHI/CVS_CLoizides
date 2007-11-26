@@ -1,0 +1,28 @@
+<use name=boost>
+<use name=DataFormats/CaloTowers>
+<use name=DataFormats/HcalRecHit>
+<use name=DataFormats/EcalDetId>
+<use name=DataFormats/DetId>
+<use name=DataFormats/RecoCandidate>
+<use name=Geometry/CaloTopology>
+<use name=Geometry/CaloGeometry>
+<use name=Geometry/CaloEventSetup>
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<use name=root>
+<flags EDM_PLUGIN=1>
+<export>
+ <lib name=CLoizidesMyCaloTowerCands>
+ <use name=boost>
+ <use name=DataFormats/DetId>
+ <use name=DataFormats/HcalDigi>
+ <use name=DataFormats/HcalRecHit>
+ <use name=DataFormats/EcalDetId>
+ <use name=DataFormats/CaloTowers>
+ <use name=DataFormats/RecoCandidate>
+ <use name=Geometry/CaloTopology>
+ <use name=Geometry/CaloGeometry>
+ <use name=Geometry/CaloEventSetup>
+ <use name=FWCore/Framework>
+ <use name=FWCore/ParameterSet>
+</export>
