@@ -1,22 +1,9 @@
 #ifndef CaloTowersCreator_MyCaloTowerCands_h
 #define CaloTowersCreator_MyCaloTowerCands_h
 
-/** \class MyCaloTowerCands
- *
- * Framework module that produces a collection
- * of candidates with a CaloTowerCandidate compoment
- *
- * \author Luca Lista, INFN
- *
- * \version $Revision: 1.1 $
- *
- * $Id: MyCaloTowerCands.h,v 1.1 2007/03/07 19:54:50 mansj Exp $
- *
- */
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include <string>
-#define consti
 
 class MyCaloTowerCands : public edm::EDProducer {
  public:
@@ -36,12 +23,11 @@ class MyCaloTowerCands : public edm::EDProducer {
   double mEtThreshold;
   /// E threshold
   double mEThreshold;
-#ifdef consti
-  //debug
+  int maxevents;
   int eventcounter;
+  bool usearea;
   double phisize(double eta);
   double etasize(double eta);
-#endif
 };
 
 #endif

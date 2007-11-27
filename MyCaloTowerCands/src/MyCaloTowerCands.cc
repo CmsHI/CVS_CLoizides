@@ -1,7 +1,7 @@
 // makes CaloTowerCandidates from CaloTowers
 // original author: L.Lista INFN
 // modifyed by: F.Ratnikov UMd
-// $Id: MyCaloTowerCands.cc,v 1.9 2007/03/07 19:54:50 mansj Exp $
+// $Id: MyCaloTowerCands.cc,v 1.1 2007/11/26 11:05:03 loizides Exp $
 #include <cmath>
 #include "DataFormats/RecoCandidate/interface/RecoCaloTowerCandidate.h"
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
@@ -9,25 +9,24 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "CLoizides/MyCaloTowerCands/interface/MyCaloTowerCands.h"
-using namespace edm;
-using namespace reco;
-using namespace std;
-#ifdef consti
 #include <TH2F.h>
 #include <TString.h>
 #include <TFile.h>
 #include <TMath.h>
-#endif
+
+using namespace edm;
+using namespace reco;
+using namespace std;
 
 MyCaloTowerCands::MyCaloTowerCands( const ParameterSet & p ) 
   :
   mVerbose (p.getUntrackedParameter<int> ("verbose", 0)),
   mSource (p.getParameter<edm::InputTag> ("src")),
   mEtThreshold (p.getParameter<double> ("minimumEt")),
-  mEThreshold (p.getParameter<double> ("minimumE"))
-#ifdef consti
-  ,eventcounter(0)
-#endif
+  mEThreshold (p.getParameter<double> ("minimumE")),
+  maxevents (p.getUntrackedParameter<int> ("maxevents", 0)),
+  usearea (p.getParameter<bool> ("usearea")),
+  eventcounter(0)
 {
   produces<CandidateCollection>();
   std::cout << "*************** MyCaloTowerCands ************** " << std::endl;
@@ -36,7 +35,6 @@ MyCaloTowerCands::MyCaloTowerCands( const ParameterSet & p )
 MyCaloTowerCands::~MyCaloTowerCands() {
 }
 
-#ifdef consti
 double MyCaloTowerCands::phisize(double eta) {
    double ev=TMath::Abs(eta);
    const double ret=5./180*TMath::Pi();
@@ -46,6 +44,7 @@ double MyCaloTowerCands::phisize(double eta) {
       return 2*ret;
    return 4*ret;
 }
+
 double MyCaloTowerCands::etasize(double eta) {
    double ev=TMath::Abs(eta);
    if(ev<=1.740)
@@ -70,19 +69,16 @@ double MyCaloTowerCands::etasize(double eta) {
       return 0.132;
    return 0.175; //not completely correct;
 }
-#endif
 
 void MyCaloTowerCands::produce( Event& evt, const EventSetup& ) {
   Handle<CaloTowerCollection> caloTowers;
   evt.getByLabel( mSource, caloTowers );
 
-#ifdef consti
-  double basesize=phisize(0)*etasize(0);
-  int netabins=(int)(7/0.05);
-  int nphibins=(int)(7/0.05);
+  const double basesize=phisize(0)*etasize(0);
+  const int netabins=(int)(7/0.025);
+  const int nphibins=(int)(7/0.025);
   TH2F *htest=new TH2F(Form("hTowers-%d",++eventcounter),";#phi;#eta",nphibins,-3.5,3.5,netabins,-3.5,3.5);
   htest->SetDirectory(0);
-#endif
   
   auto_ptr<CandidateCollection> cands( new CandidateCollection );
   cands->reserve( caloTowers->size() );
@@ -94,15 +90,13 @@ void MyCaloTowerCands::produce( Event& evt, const EventSetup& ) {
 		<< cal->et() << '/' << cal->eta() << '/' << cal->phi() << '/' << cal->energy() << " is...";
     }
 
-#ifdef consti
-    double factor=phisize(cal->eta())*etasize(cal->eta())/basesize;
+    double factor=1;
+    if(usearea) 
+       factor=phisize(cal->eta())*etasize(cal->eta())/basesize;
     if (cal->et() >= mEtThreshold*factor && cal->energy() >= mEThreshold*factor ) {
       math::PtEtaPhiELorentzVector p( cal->et(), cal->eta(), cal->phi(), cal->energy() );
       htest->Fill(cal->phi(),cal->eta(),cal->et());
-#else
-    if (cal->et() >= mEtThreshold && cal->energy() >= mEThreshold ) {
-      math::PtEtaPhiELorentzVector p( cal->et(), cal->eta(), cal->phi(), cal->energy() );
-#endif      
+
       RecoCaloTowerCandidate * c = 
 	new RecoCaloTowerCandidate( 0, Candidate::LorentzVector( p ) );
       c->setCaloTower (CaloTowerRef( caloTowers, idx) );
@@ -118,13 +112,11 @@ void MyCaloTowerCands::produce( Event& evt, const EventSetup& ) {
   }
   evt.put( cands );
 
-#ifdef consti
-  if(0) {
+  if(eventcounter<maxevents) {
      TFile f("towershist.root","update");
      TDirectory::TContext context(&f);
      htest->Write();
      f.Close();
-  } else 
-     delete htest;
-#endif      
+  }
+  delete htest;
 }
