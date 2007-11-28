@@ -6,6 +6,10 @@
 #include <string>
 
 class MyCaloTowerCands : public edm::EDProducer {
+ private:
+  double phisize(double eta);
+  double etasize(double eta);
+
  public:
   /// constructor from parameter set
   MyCaloTowerCands( const edm::ParameterSet & );
@@ -24,10 +28,8 @@ class MyCaloTowerCands : public edm::EDProducer {
   /// E threshold
   double mEThreshold;
   int maxevents;
-  int eventcounter;
   bool usearea;
-  double phisize(double eta);
-  double etasize(double eta);
+  int eventcounter;
 };
 
 #endif

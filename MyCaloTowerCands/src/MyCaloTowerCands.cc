@@ -1,7 +1,7 @@
 // makes CaloTowerCandidates from CaloTowers
 // original author: L.Lista INFN
 // modifyed by: F.Ratnikov UMd
-// $Id: MyCaloTowerCands.cc,v 1.1 2007/11/26 11:05:03 loizides Exp $
+// $Id: MyCaloTowerCands.cc,v 1.2 2007/11/27 19:57:22 loizides Exp $
 #include <cmath>
 #include "DataFormats/RecoCandidate/interface/RecoCaloTowerCandidate.h"
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
@@ -18,8 +18,7 @@ using namespace edm;
 using namespace reco;
 using namespace std;
 
-MyCaloTowerCands::MyCaloTowerCands( const ParameterSet & p ) 
-  :
+MyCaloTowerCands::MyCaloTowerCands( const ParameterSet & p ) :
   mVerbose (p.getUntrackedParameter<int> ("verbose", 0)),
   mSource (p.getParameter<edm::InputTag> ("src")),
   mEtThreshold (p.getParameter<double> ("minimumEt")),
